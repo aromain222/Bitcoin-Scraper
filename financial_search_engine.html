@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Data Search Engine</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .search-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+        }
+        
+        .search-section h2 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .company-input {
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 200px;
+            margin-right: 10px;
+            transition: border-color 0.3s;
+        }
+        
+        .company-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .search-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .quick-search {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .quick-search-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quick-search-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .search-results {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .gcse-search {
+            margin: 20px 0;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .info-box h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .info-box li {
+            margin: 5px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Financial Data Search Engine</h1>
+        <p>Search across Yahoo Finance, Seeking Alpha, MarketWatch, SEC EDGAR, and more financial sources</p>
+    </div>
+    
+    <div class="search-container">
+        <div class="search-section">
+            <h2>🔍 Financial Data Search</h2>
+            
+            <!-- Google Custom Search Engine -->
+            <script async src="https://cse.google.com/cse.js?cx=a3eb9b4308a3c4682"></script>
+            <div class="gcse-search"></div>
+        </div>
+        
+        <div class="search-section">
+            <h2>⚡ Quick Company Search</h2>
+            <p>Enter a company ticker symbol to quickly search for financial data:</p>
+            
+            <input type="text" id="companyTicker" class="company-input" placeholder="Enter ticker (e.g., MSFT)">
+            <button onclick="searchCompany()" class="search-button">Search Company</button>
+            
+            <div class="quick-search">
+                <span>Quick search:</span>
+                <button class="quick-search-btn" onclick="quickSearch('MSFT')">MSFT</button>
+                <button class="quick-search-btn" onclick="quickSearch('AAPL')">AAPL</button>
+                <button class="quick-search-btn" onclick="quickSearch('GOOGL')">GOOGL</button>
+                <button class="quick-search-btn" onclick="quickSearch('TSLA')">TSLA</button>
+                <button class="quick-search-btn" onclick="quickSearch('AMZN')">AMZN</button>
+                <button class="quick-search-btn" onclick="quickSearch('META')">META</button>
+                <button class="quick-search-btn" onclick="quickSearch('NVDA')">NVDA</button>
+                <button class="quick-search-btn" onclick="quickSearch('JPM')">JPM</button>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>📊 What You Can Search For:</h3>
+            <ul>
+                <li><strong>Financial Statements:</strong> Revenue, earnings, balance sheets, cash flow</li>
+                <li><strong>Market Data:</strong> Stock prices, market cap, P/E ratios, volume</li>
+                <li><strong>Analyst Coverage:</strong> Ratings, price targets, earnings estimates</li>
+                <li><strong>News & Analysis:</strong> Company news, earnings reports, market commentary</li>
+                <li><strong>SEC Filings:</strong> 10-K, 10-Q, 8-K reports and official documents</li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h3>🏢 Data Sources Included:</h3>
+            <ul>
+                <li>Yahoo Finance - Stock quotes and financial data</li>
+                <li>Seeking Alpha - Analyst ratings and earnings analysis</li>
+                <li>MarketWatch - Real-time market data and news</li>
+                <li>Finviz - Financial ratios and screening data</li>
+                <li>SEC EDGAR - Official company filings</li>
+                <li>Macrotrends - Historical financial data</li>
+                <li>Bloomberg - Professional market data</li>
+                <li>Reuters - Financial news and analysis</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="search-results" id="searchResults">
+        <h2>📈 Search Results</h2>
+        <p>Enter a company ticker above to start searching for financial data.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Financial Data Search Engine | Powered by Google Custom Search</p>
+        <p>Searching across major financial websites for comprehensive company data</p>
+    </div>
+    
+    <script>
+        function searchCompany() {
+            const ticker = document.getElementById('companyTicker').value.toUpperCase().trim();
+            if (!ticker) {
+                alert('Please enter a company ticker symbol');
+                return;
+            }
+            
+            // Update search results section
+            document.getElementById('searchResults').innerHTML = `
+                <h2>📈 Searching for ${ticker}...</h2>
+                <p>Searching across financial websites for ${ticker} data...</p>
+            `;
+            
+            // Trigger Google CSE search
+            const searchBox = document.querySelector('.gsc-input-box input');
+            if (searchBox) {
+                searchBox.value = `${ticker} financial data revenue earnings balance sheet`;
+                searchBox.dispatchEvent(new Event('input'));
+                
+                // Trigger search
+                setTimeout(() => {
+                    const searchButton = document.querySelector('.gsc-search-button');
+                    if (searchButton) {
+                        searchButton.click();
+                    }
+                }, 100);
+            }
+        }
+        
+        function quickSearch(ticker) {
+            document.getElementById('companyTicker').value = ticker;
+            searchCompany();
+        }
+        
+        // Auto-search on Enter key
+        document.getElementById('companyTicker').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCompany();
+            }
+        });
+        
+        // Focus on input when page loads
+        window.addEventListener('load', function() {
+            document.getElementById('companyTicker').focus();
+        });
+        
+        // Add some example searches
+        function showExampleSearches() {
+            const examples = [
+                'MSFT financial statements',
+                'AAPL revenue earnings',
+                'GOOGL balance sheet',
+                'TSLA analyst ratings',
+                'AMZN market cap',
+                'META quarterly earnings',
+                'NVDA P/E ratio',
+                'JPM dividend yield'
+            ];
+            
+            console.log('Example searches you can try:');
+            examples.forEach(example => console.log(`- ${example}`));
+        }
+        
+        // Show examples when page loads
+        showExampleSearches();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Models Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ccc; }
+        button { background: #007cba; color: white; padding: 12px 24px; border: none; font-size: 16px; cursor: pointer; margin: 10px 5px 10px 0; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .results { margin-top: 30px; }
+        .download-link { display: inline-block; background: #28a745; color: white; padding: 10px 15px; text-decoration: none; margin: 5px; border-radius: 3px; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .loading { color: #666; margin: 10px 0; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Wall Street Financial Models</h1>
+    <p>Generate professional Excel financial models</p>
+
+    <form id="modelForm">
+        <div class="form-group">
+            <label>Company Name:</label>
+            <input type="text" id="companyName" placeholder="e.g., Apple Inc." required>
+        </div>
+        
+        <div class="form-group">
+            <label>Stock Ticker:</label>
+            <input type="text" id="ticker" placeholder="e.g., AAPL" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Financial Model:</label>
+            <select id="modelType" required>
+                <option value="">Select a model...</option>
+                <option value="dcf">DCF (Discounted Cash Flow)</option>
+                <option value="lbo">LBO (Leveraged Buyout)</option>
+                <option value="comps">Comparable Analysis</option>
+                <option value="3-statement">3-Statement Model</option>
+                <option value="ma">M&A Analysis</option>
+                <option value="ipo">IPO Model</option>
+                <option value="options">Options Pricing</option>
+            </select>
+        </div>
+        
+        <button type="submit" id="generateBtn">Generate Excel Model</button>
+    </form>
+
+    <div id="loading" class="loading hidden">
+        <p>⏳ Generating your professional Excel model...</p>
+        <p>This may take 10-30 seconds depending on data availability.</p>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+
+    <div id="results" class="results hidden">
+        <h3>✅ Your Excel Model is Ready!</h3>
+        <div id="downloadLinks"></div>
+        <button onclick="resetForm()">Generate Another Model</button>
+    </div>
+
+    <script>
+        document.getElementById('modelForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const companyName = document.getElementById('companyName').value.trim();
+            const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+            const modelType = document.getElementById('modelType').value;
+            
+            if (!companyName || !ticker || !modelType) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company_name: companyName,
+                        ticker: ticker,
+                        models: [modelType]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.results && data.results.length > 0) {
+                    showResults(data.results);
+                } else {
+                    showError(data.error || 'Failed to generate model. Please try again.');
+                }
+                
+            } catch (error) {
+                showError('Connection error. Make sure the backend is running on port 5001.');
+            }
+        });
+        
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('generateBtn').disabled = true;
+        }
+        
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('generateBtn').disabled = false;
+        }
+        
+        function showResults(results) {
+            const downloadLinks = document.getElementById('downloadLinks');
+            downloadLinks.innerHTML = '';
+            
+            results.forEach(result => {
+                const link = document.createElement('a');
+                link.href = `http://localhost:5001${result.download_url}`;
+                link.className = 'download-link';
+                link.textContent = `📊 Download ${result.model_type} Excel File`;
+                link.download = result.filename;
+                downloadLinks.appendChild(link);
+            });
+            
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('generateBtn').disabled = false;
+        }
+        
+        function resetForm() {
+            document.getElementById('modelForm').reset();
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+        }
+    </script>
+</body>
+</html> 

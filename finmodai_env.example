@@ -1,0 +1,128 @@
+# FinModAI Platform - Environment Variables
+# Copy this file to .env and fill in your API keys
+
+# ========================================
+# FREE/PERSONAL USE DATA SOURCES
+# ========================================
+
+# Yahoo Finance (Free - No API Key Required)
+# YFINANCE_AVAILABLE=true (automatically detected)
+
+# Financial Modeling Prep (Free tier available)
+# Get API key at: https://financialmodelingprep.com/developer/docs
+FMP_API_KEY=your_fmp_api_key_here
+
+# IEX Cloud (Free tier available)
+# Get API key at: https://iexcloud.io/console/tokens
+IEX_API_KEY=your_iex_api_key_here
+
+# ========================================
+# PROFESSIONAL DATA SOURCES
+# ========================================
+
+# Alpha Vantage (Free tier + paid plans)
+# Get API key at: https://www.alphavantage.co/support/#api-key
+ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
+
+# Polygon.io (Free tier + paid plans)
+# Get API key at: https://polygon.io/
+POLYGON_API_KEY=your_polygon_api_key_here
+
+# Twelve Data (Free tier + paid plans)
+# Get API key at: https://twelvedata.com/
+TWELVE_DATA_API_KEY=your_twelve_data_api_key_here
+
+# Intrinio (Paid plans)
+# Get API key at: https://intrinio.com/
+INTRINIO_API_KEY=your_intrinio_api_key_here
+
+# Quandl/Nasdaq Data Link (Free tier + paid plans)
+# Get API key at: https://www.quandl.com/
+QUANDL_API_KEY=your_quandl_api_key_here
+
+# ========================================
+# INSTITUTIONAL/ENTERPRISE SOURCES
+# ========================================
+
+# Bloomberg Terminal (Requires Bloomberg subscription)
+# Contact Bloomberg for API access
+BLOOMBERG_API_KEY=your_bloomberg_api_key_here
+
+# S&P Capital IQ (Requires CapIQ subscription)
+# Contact S&P for API access
+CAPIQ_API_KEY=your_capiq_api_key_here
+
+# PitchBook (Requires PitchBook subscription)
+# Contact PitchBook for API access
+PITCHBOOK_API_KEY=your_pitchbook_api_key_here
+
+# Refinitiv/Thomson Reuters (Requires subscription)
+# Contact Refinitiv for API access
+REFINITIV_API_KEY=your_refinitiv_api_key_here
+
+# FactSet (Requires FactSet subscription)
+# Contact FactSet for API access
+FACTSET_API_KEY=your_factset_api_key_here
+
+# ========================================
+# PLATFORM CONFIGURATION
+# ========================================
+
+# Flask Web Interface
+FINMODAI_WEB_HOST=localhost
+FINMODAI_WEB_PORT=8000
+
+# Data Cache Settings
+FINMODAI_CACHE_DIR=.finmodai_cache
+FINMODAI_MAX_CACHE_AGE_HOURS=24
+
+# Output Directory
+FINMODAI_OUTPUT_DIR=generated_models
+
+# Flask Secret Key (for sessions)
+SECRET_KEY=your_secret_key_here
+
+# ========================================
+# DATA SOURCE PRIORITY & SETTINGS
+# ========================================
+
+# Data sources are prioritized automatically:
+# 1. yfinance (free, fast)
+# 2. Financial Modeling Prep
+# 3. IEX Cloud
+# 4. Alpha Vantage
+# 5. Polygon.io
+# 6. Twelve Data
+# 7. Intrinio
+# 8. Quandl
+# 9. Bloomberg
+# 10. CapIQ
+# 11. PitchBook
+# 12. Refinitiv
+# 13. FactSet
+# 14. SEC EDGAR (fallback)
+
+# To disable a data source, comment out its API key or set to empty string
+
+# ========================================
+# USAGE NOTES
+# ========================================
+
+# 1. Free sources work without API keys:
+#    - Yahoo Finance (yfinance library)
+#    - SEC EDGAR (public data)
+
+# 2. Freemium sources offer free tiers:
+#    - Financial Modeling Prep: 250 requests/day
+#    - IEX Cloud: 50,000 messages/month
+#    - Alpha Vantage: 5 requests/minute, 500/day
+
+# 3. Professional sources require subscriptions:
+#    - Bloomberg, CapIQ, PitchBook, Refinitiv, FactSet
+#    - Higher data quality and coverage
+#    - Institutional-grade reliability
+
+# 4. Platform automatically falls back between sources
+#    if one fails or has insufficient data
+
+# 5. Data is cached to improve performance and reduce API calls

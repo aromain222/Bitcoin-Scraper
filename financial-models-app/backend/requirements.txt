@@ -1,0 +1,13 @@
+flask
+flask-cors
+pandas
+yfinance
+numpy
+openpyxl
+beautifulsoup4
+requests
+scipy
+selenium
+sec-edgar-downloader
+lxml
+html5lib 

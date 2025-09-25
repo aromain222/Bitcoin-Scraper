@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}DCF Results - {{ company_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> DCF Analysis Results
+                </h3>
+                <small class="text-white-50">{{ company_name }}{% if ticker %} ({{ ticker }}){% endif %}</small>
+            </div>
+            <div class="card-body">
+                <!-- Key Metrics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white text-center p-3">
+                            <h4>${{ "%.1f"|format(result.equity_value / 1000000) }}M</h4>
+                            <small>Equity Value</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white text-center p-3">
+                            <h4>${{ "%.1f"|format(result.share_price) }}</h4>
+                            <small>Intrinsic Share Price</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white text-center p-3">
+                            <h4>{{ "%.1f"|format(result.wacc * 100) }}%</h4>
+                            <small>WACC</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white text-center p-3">
+                            <h4>{{ "%.1f"|format(result.get('overall_model_score', 0)) }}/100</h4>
+                            <small>Model Quality</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation Summary -->
+                {% if result.get('validation_report') %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-check-circle"></i> Validation Results</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <h4 class="text-{{ 'success' if result.validation_status == 'EXCELLENT' else 'warning' if result.validation_status == 'GOOD' else 'danger' }}">
+                                                {{ result.validation_status }}
+                                            </h4>
+                                            <small>Overall Status</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <h4 class="text-primary">{{ "%.1f"|format(result.validation_score) }}/1.0</h4>
+                                            <small>Validation Score</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <h4 class="text-info">{{ "%.1f"|format(result.get('connectivity_score', 0)) }}/100</h4>
+                                            <small>Connectivity Score</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Detailed Results -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-calculator"></i> Valuation Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Enterprise Value:</strong></td>
+                                        <td class="text-end">${{ "%.0f"|format(result.enterprise_value / 1000000) }}M</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Net Debt:</strong></td>
+                                        <td class="text-end">${{ "%.0f"|format(result.get('net_debt', 0) / 1000000) }}M</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Equity Value:</strong></td>
+                                        <td class="text-end">${{ "%.0f"|format(result.equity_value / 1000000) }}M</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Shares Outstanding:</strong></td>
+                                        <td class="text-end">{{ "%.0f"|format(result.get('shares_outstanding', 0) / 1000000) }}M</td>
+                                    </tr>
+                                    <tr class="table-primary">
+                                        <td><strong>Intrinsic Share Price:</strong></td>
+                                        <td class="text-end"><strong>${{ "%.2f"|format(result.share_price) }}</strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cogs"></i> Assumptions & Parameters</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>WACC:</strong></td>
+                                        <td class="text-end">{{ "%.2f"|format(result.wacc * 100) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Terminal Growth:</strong></td>
+                                        <td class="text-end">{{ "%.2f"|format(result.get('terminal_growth', 0.025) * 100) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Risk-Free Rate:</strong></td>
+                                        <td class="text-end">4.00%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Market Risk Premium:</strong></td>
+                                        <td class="text-end">6.00%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Projection Years:</strong></td>
+                                        <td class="text-end">{{ result.get('fcf', [])|length if result.get('fcf') else 0 }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FCF Schedule -->
+                {% if result.get('fcf') %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar"></i> Free Cash Flow Schedule</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Year</th>
+                                                <th>Revenue ($M)</th>
+                                                <th>EBITDA ($M)</th>
+                                                <th>FCF ($M)</th>
+                                                <th>PV FCF ($M)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for i in range(result.fcf|length) %}
+                                            <tr>
+                                                <td>Year {{ i + 1 }}</td>
+                                                <td>${{ "%.0f"|format(result.get('revenue', [])[i] / 1000000) if result.get('revenue') and i < result.revenue|length else 'N/A' }}</td>
+                                                <td>${{ "%.0f"|format(result.get('ebitda', [])[i] / 1000000) if result.get('ebitda') and i < result.ebitda|length else 'N/A' }}</td>
+                                                <td>${{ "%.0f"|format(result.fcf[i] / 1000000) }}</td>
+                                                <td>${{ "%.0f"|format(result.get('discounted_fcfs', [])[i] / 1000000) if result.get('discounted_fcfs') and i < result.discounted_fcfs|length else 'N/A' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                            <tr class="table-primary">
+                                                <td><strong>Terminal Value</strong></td>
+                                                <td colspan="3">${{ "%.0f"|format(result.get('terminal_value', 0) / 1000000) }}M</td>
+                                                <td>${{ "%.0f"|format(result.get('pv_terminal', 0) / 1000000) }}M</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Export Options -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-download"></i> Export Options</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <a href="/api/export/{{ job_id }}" class="btn btn-primary btn-lg w-100">
+                                            <i class="fas fa-file-code"></i> Export JSON
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-success btn-lg w-100" onclick="exportToExcel()">
+                                            <i class="fas fa-file-excel"></i> Export Excel
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-info btn-lg w-100" onclick="exportToPDF()">
+                                            <i class="fas fa-file-pdf"></i> Export PDF
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <p class="text-muted mb-0">
+                                        <i class="fas fa-info-circle"></i>
+                                        Results are also automatically exported to Google Sheets with full validation.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportToExcel() {
+    alert('Excel export feature coming soon!');
+}
+
+function exportToPDF() {
+    alert('PDF export feature coming soon!');
+}
+
+// Auto-refresh status if still processing
+if (window.location.href.includes('/results/')) {
+    // Check if we need to poll for updates (if still processing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const jobId = window.location.pathname.split('/').pop();
+
+    // Poll for any updates (though results should be ready)
+    setTimeout(() => {
+        fetch(`/api/job/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    console.log('Results are ready');
+                }
+            })
+            .catch(err => console.log('Status check:', err));
+    }, 1000);
+}
+</script>
+{% endblock %}
