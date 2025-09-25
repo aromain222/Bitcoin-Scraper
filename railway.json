@@ -5,8 +5,8 @@
   },
   "deploy": {
     "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 financial_models_ui:app",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 120
   }
 }
 

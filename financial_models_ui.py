@@ -32,7 +32,7 @@ try:
     from finmodai_platform import PlatformConfig
     print("✅ Data ingestion imported")
 except ImportError as e:
-    print("⚠️ Data ingestion not available")
+    print(f"⚠️ Data ingestion not available: {e}")
     DataIngestionEngine = None
     PlatformConfig = None
 
@@ -1716,6 +1716,11 @@ def dashboard():
     """Main dashboard with navigation to all features"""
     return render_template_string(MAIN_DASHBOARD_HTML)
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for deployment platforms"""
+    return {"status": "healthy", "service": "FinModAI", "timestamp": datetime.now().isoformat()}
+
 # Company data input
 @app.route('/company-data', methods=['GET', 'POST'])
 def company_data():
@@ -2169,9 +2174,8 @@ def main():
     print("=" * 60)
 
     # Use different configurations for production vs development
-    if is_production:
-        app.run(host='0.0.0.0', port=port, debug=False)
-    else:
+    # In production, Gunicorn will handle the WSGI app
+    if not is_production:
         app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
 
 def run_server():
@@ -3359,9 +3363,8 @@ def main():
     print("=" * 60)
 
     # Use different configurations for production vs development
-    if is_production:
-        app.run(host='0.0.0.0', port=port, debug=False)
-    else:
+    # In production, Gunicorn will handle the WSGI app
+    if not is_production:
         app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
 
 def run_server():
