@@ -31,5 +31,5 @@ ENV FLASK_ENV=production
 ENV PORT=8080
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--timeout", "120", "financial_models_ui:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--timeout", "300", "--preload", "--log-level", "info", "financial_models_ui:app"]
 

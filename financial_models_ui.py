@@ -15,30 +15,55 @@ import time
 from io import BytesIO
 import zipfile
 import tempfile
-import pandas as pd
+# Lazy import pandas to speed up startup
+pd = None
+
+def get_pandas():
+    """Lazy load pandas when needed"""
+    global pd
+    if pd is None:
+        import pandas as pandas_module
+        pd = pandas_module
+    return pd
 import shutil
 
-# Import FinModAI platform
-try:
-    from finmodai_platform import FinModAIPlatform
-    print("✅ FinModAI Platform imported")
-except ImportError as e:
-    print(f"⚠️ FinModAI Platform not available: {e}")
-    FinModAIPlatform = None
+# Lazy import FinModAI platform to speed up startup
+FinModAIPlatform = None
+DataIngestionEngine = None
+PlatformConfig = None
 
-# Import data ingestion
-try:
-    from finmodai.data_ingestion import DataIngestionEngine
-    from finmodai_platform import PlatformConfig
-    print("✅ Data ingestion imported")
-except ImportError as e:
-    print(f"⚠️ Data ingestion not available: {e}")
-    DataIngestionEngine = None
-    PlatformConfig = None
+def get_finmodai_platform():
+    """Lazy load FinModAI platform when needed"""
+    global FinModAIPlatform
+    if FinModAIPlatform is None:
+        try:
+            from finmodai_platform import FinModAIPlatform as FMP
+            FinModAIPlatform = FMP
+            print("✅ FinModAI Platform loaded")
+        except ImportError as e:
+            print(f"⚠️ FinModAI Platform not available: {e}")
+    return FinModAIPlatform
+
+def get_data_ingestion():
+    """Lazy load data ingestion when needed"""
+    global DataIngestionEngine, PlatformConfig
+    if DataIngestionEngine is None:
+        try:
+            from finmodai.data_ingestion import DataIngestionEngine as DIE
+            from finmodai_platform import PlatformConfig as PC
+            DataIngestionEngine = DIE
+            PlatformConfig = PC
+            print("✅ Data ingestion loaded")
+        except ImportError as e:
+            print(f"⚠️ Data ingestion not available: {e}")
+    return DataIngestionEngine, PlatformConfig
 
 # Create data storage
 DATA_STORAGE = {}
 MODEL_STORAGE = {}
+
+# Application startup state
+APP_READY = True  # Start as ready for basic health checks
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -47,7 +72,13 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Ensure upload directory exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs('generated_models', exist_ok=True)
+    print("✅ Directories created successfully")
+except Exception as e:
+    print(f"⚠️ Directory creation warning: {e}")
+    # Don't fail startup for directory issues
 
 # HTML Templates for the web interface
 MAIN_DASHBOARD_HTML = """
@@ -1718,8 +1749,34 @@ def dashboard():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint for deployment platforms"""
-    return {"status": "healthy", "service": "FinModAI", "timestamp": datetime.now().isoformat()}
+    """Simple health check endpoint for deployment platforms"""
+    try:
+        if APP_READY:
+            return "OK", 200
+        else:
+            return "Starting", 503
+    except Exception as e:
+        print(f"Health check error: {e}")
+        return "Error", 500
+
+@app.route('/healthz')
+def health_check_detailed():
+    """Detailed health check endpoint"""
+    try:
+        return {
+            "status": "healthy" if APP_READY else "starting",
+            "service": "FinModAI",
+            "version": "1.0",
+            "timestamp": datetime.now().isoformat()
+        }, 200 if APP_READY else 503
+    except Exception as e:
+        print(f"Detailed health check error: {e}")
+        return {"status": "error", "message": str(e)}, 500
+
+@app.route('/ping')
+def ping():
+    """Ultra-simple ping endpoint"""
+    return "pong"
 
 # Company data input
 @app.route('/company-data', methods=['GET', 'POST'])
