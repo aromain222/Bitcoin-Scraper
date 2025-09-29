@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 financial_models_ui:app
+    startCommand: python3 start.py
     envVars:
       - key: FLASK_ENV
         value: production
