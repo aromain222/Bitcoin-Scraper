@@ -13,13 +13,13 @@ else:
     port = '8080'
     print(f"Using default port: {port}")
 
-print(f"Starting FinModAI on 0.0.0.0:{port}")
+print(f"Starting MINIMAL FinModAI on 0.0.0.0:{port}")
 
-# Use exec to replace this process with gunicorn
+# Use minimal app instead of the complex one
 os.execvp('gunicorn', [
     'gunicorn',
     '--bind', f'0.0.0.0:{port}',
     '--workers', '1', 
-    '--timeout', '120',
-    'financial_models_ui:app'
+    '--timeout', '30',
+    'minimal_app:app'
 ])
