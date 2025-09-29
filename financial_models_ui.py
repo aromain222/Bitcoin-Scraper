@@ -1920,28 +1920,39 @@ def generate_model():
             ticker = request.form.get('ticker')
             print(f"🔍 Model generation requested: {model_type} for {ticker}")
             
-            # Try to load FinModAI platform
-            platform = get_finmodai_platform()
-            print(f"🔍 FinModAI Platform loaded: {platform is not None}")
+            # Simplified: Skip platform loading for now and use mock data
+            print(f"🔍 Using simplified model generation for debugging")
             
-            if platform and ticker:
+            if ticker:
                 try:
-                    print(f"🔍 Creating FinModAI Platform instance...")
-                    platform_instance = platform()
-                    print(f"🔍 Platform instance created: {platform_instance is not None}")
-
-                    print(f"🔍 Generating {model_type} model for {ticker}...")
-                    # Generate the requested model type
-                    model_result = platform_instance.generate_model(
-                        model_type=model_type,
-                        company_identifier=ticker
-                    )
+                    print(f"🔍 Starting model generation for {model_type} - {ticker}")
                     
-                    print(f"🔍 Model generation completed!")
-                    print(f"🔍 Model result type: {type(model_result)}")
-                    print(f"🔍 Model result keys: {list(model_result.keys()) if isinstance(model_result, dict) else 'Not a dict'}")
+                    # Create a simple mock result for now to test the UI
+                    model_result = {
+                        'model_type': model_type,
+                        'ticker': ticker,
+                        'status': 'completed',
+                        'message': 'Model generation temporarily simplified for debugging',
+                        'output_files': [],  # No files for now
+                        'processing_time_seconds': 1.0,
+                        'company_name': f"{ticker} Corporation",
+                        'model_summary': {
+                            'key_assumptions': {
+                                'revenue_growth_rate': 0.15,
+                                'wacc': 0.10,
+                                'terminal_growth_rate': 0.025
+                            },
+                            'valuation_outputs': {
+                                'enterprise_value': 1000000000,
+                                'equity_value': 900000000,
+                                'implied_price': 150.00
+                            }
+                        }
+                    }
+                    
+                    print(f"🔍 Mock model result created successfully!")
 
-                    # Ensure downloadable files are staged where the UI expects them
+                    # Skip file generation for now
                     try:
                         output_files = model_result.get('output_files') or []
                         print(f"🔧 DEBUG: model_result output_files: {output_files}")
@@ -2008,15 +2019,8 @@ def generate_model():
                     traceback.print_exc()
                     flash(f"Error generating model: {str(e)}", "error")
             else:
-                if not platform:
-                    print("❌ FinModAI platform not available")
-                    flash("FinModAI platform not available", "error")
-                elif not ticker:
-                    print("❌ Ticker not provided")
-                    flash("Ticker not provided", "error")
-                else:
-                    print("❌ Unknown issue with platform or ticker")
-                    flash("Unknown issue with model generation", "error")
+                print("❌ Ticker not provided")
+                flash("Ticker not provided", "error")
 
     return render_template_string(MODEL_GENERATION_HTML, companies=DATA_STORAGE)
 
