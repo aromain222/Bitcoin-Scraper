@@ -64,5 +64,7 @@ def test():
     return "Minimal FinModAI Test - Working!"
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    import os
+    port = int(os.environ.get('PORT', 10000))
+    print(f"Starting minimal app on 0.0.0.0:{port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
