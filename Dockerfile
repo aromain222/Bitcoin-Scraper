@@ -22,6 +22,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p generated_models uploads
 
+# Make startup script executable
+RUN chmod +x start.py
+
 # Expose port
 EXPOSE 8080
 
@@ -30,6 +33,6 @@ ENV FLASK_APP=financial_models_ui.py
 ENV FLASK_ENV=production
 ENV PORT=8080
 
-# Run the application
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 300 --keep-alive 5 --max-requests 50 --max-requests-jitter 5 --worker-class sync --log-level info --access-logfile - --error-logfile - financial_models_ui:app"]
+# Run the application using Python startup script
+CMD ["python3", "start.py"]
 
