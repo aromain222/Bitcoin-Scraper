@@ -1969,17 +1969,52 @@ def model_results(model_id):
 @app.route('/download/<model_id>')
 def download_model(model_id):
     """Download Excel model file"""
+    print(f"🔍 Download requested for model_id: {model_id}")
+    
     if model_id in MODEL_STORAGE:
         model = MODEL_STORAGE[model_id]
-        if model.get('result') and model['result'].get('output_files'):
-            file_path = model['result']['output_files'][0]
-            if os.path.exists(file_path):
-                return send_file(file_path, as_attachment=True)
+        print(f"🔍 Model found: {model.get('type')} for {model.get('ticker')}")
+        
+        # Debug model result structure
+        if model.get('result'):
+            print(f"🔍 Model result keys: {list(model['result'].keys())}")
+            print(f"🔍 Has output_files: {'output_files' in model['result']}")
+            
+            if 'output_files' in model['result']:
+                output_files = model['result']['output_files']
+                print(f"🔍 Output files: {output_files}")
+                
+                if output_files and len(output_files) > 0:
+                    file_path = output_files[0]
+                    print(f"🔍 Checking file path: {file_path}")
+                    
+                    if os.path.exists(file_path):
+                        print(f"✅ File exists, sending: {file_path}")
+                        return send_file(file_path, as_attachment=True)
+                    else:
+                        print(f"❌ File not found on disk: {file_path}")
+                        # Check if file exists in generated_models directory
+                        filename = os.path.basename(file_path)
+                        alt_path = os.path.join('generated_models', filename)
+                        print(f"🔍 Checking alternative path: {alt_path}")
+                        
+                        if os.path.exists(alt_path):
+                            print(f"✅ Found file at alternative path: {alt_path}")
+                            return send_file(alt_path, as_attachment=True)
+                        else:
+                            print(f"❌ File not found at alternative path either")
+                            flash("Excel file not found on disk", "error")
+                else:
+                    print("❌ Output files list is empty")
+                    flash("No Excel file path available", "error")
             else:
-                flash("Excel file not found on disk", "error")
+                print("❌ No output_files key in result")
+                flash("No Excel file available for this model", "error")
         else:
-            flash("No Excel file available for this model", "error")
+            print("❌ No result in model")
+            flash("Model has no result data", "error")
     else:
+        print(f"❌ Model {model_id} not found in storage")
         flash("Model not found", "error")
 
     return redirect(url_for('model_results', model_id=model_id))
@@ -2008,8 +2043,17 @@ def debug_models():
     """Debug endpoint to check model storage"""
     debug_info = {
         'total_models': len(MODEL_STORAGE),
+        'generated_models_dir_exists': os.path.exists('generated_models'),
+        'generated_models_files': [],
         'models': {}
     }
+    
+    # Check generated_models directory
+    if os.path.exists('generated_models'):
+        try:
+            debug_info['generated_models_files'] = os.listdir('generated_models')
+        except Exception as e:
+            debug_info['generated_models_error'] = str(e)
     
     for model_id, model in MODEL_STORAGE.items():
         debug_info['models'][model_id] = {
@@ -2018,7 +2062,8 @@ def debug_models():
             'status': model.get('status'),
             'result_keys': list(model.get('result', {}).keys()) if model.get('result') else [],
             'has_output_files': 'output_files' in model.get('result', {}) if model.get('result') else False,
-            'output_files': model.get('result', {}).get('output_files') if model.get('result') else None
+            'output_files': model.get('result', {}).get('output_files') if model.get('result') else None,
+            'timestamp': model.get('timestamp')
         }
     
     return f"<pre>{json.dumps(debug_info, indent=2)}</pre>"
