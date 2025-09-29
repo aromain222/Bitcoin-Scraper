@@ -71,7 +71,7 @@ app.secret_key = 'finmodai_secret_key_2024'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Ensure upload directory exists
+# Ensure upload directory exists - but don't fail startup if this fails
 try:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('generated_models', exist_ok=True)
@@ -79,6 +79,8 @@ try:
 except Exception as e:
     print(f"⚠️ Directory creation warning: {e}")
     # Don't fail startup for directory issues
+
+print("🚀 Flask app initialized - ready for requests")
 
 # HTML Templates for the web interface
 MAIN_DASHBOARD_HTML = """
@@ -1776,7 +1778,19 @@ def health_check_detailed():
 @app.route('/ping')
 def ping():
     """Ultra-simple ping endpoint"""
+    print("🏓 Ping endpoint hit!")
     return "pong"
+
+@app.route('/status')
+def status():
+    """Simple status endpoint for debugging"""
+    print("📊 Status endpoint hit!")
+    return {
+        "status": "running",
+        "app_ready": APP_READY,
+        "port": os.environ.get('PORT', 'not_set'),
+        "timestamp": datetime.now().isoformat()
+    }
 
 # Company data input
 @app.route('/company-data', methods=['GET', 'POST'])

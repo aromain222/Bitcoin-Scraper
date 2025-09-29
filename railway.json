@@ -4,9 +4,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --preload financial_models_ui:app",
-    "healthcheckPath": "/ping",
-    "healthcheckTimeout": 180
+    "startCommand": "gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --preload financial_models_ui:app"
   }
 }
 
