@@ -1832,6 +1832,47 @@ def test():
         print(f"❌ Test endpoint error: {e}")
         return f"Test Error: {str(e)}", 500
 
+@app.route('/test-modules')
+def test_modules():
+    """Test if FinModAI modules are available"""
+    try:
+        results = {
+            "finmodai_platform": False,
+            "data_ingestion": False,
+            "pandas": False,
+            "errors": []
+        }
+        
+        # Test FinModAI platform
+        try:
+            platform = get_finmodai_platform()
+            results["finmodai_platform"] = platform is not None
+            if platform:
+                # Try to create an instance
+                instance = platform()
+                results["platform_instance"] = instance is not None
+        except Exception as e:
+            results["errors"].append(f"FinModAI Platform: {str(e)}")
+        
+        # Test data ingestion
+        try:
+            data_engine, config = get_data_ingestion()
+            results["data_ingestion"] = data_engine is not None
+        except Exception as e:
+            results["errors"].append(f"Data Ingestion: {str(e)}")
+            
+        # Test pandas
+        try:
+            pd = get_pandas()
+            results["pandas"] = pd is not None
+        except Exception as e:
+            results["errors"].append(f"Pandas: {str(e)}")
+        
+        return f"<pre>{json.dumps(results, indent=2)}</pre>"
+        
+    except Exception as e:
+        return f"<h1>Module Test Error</h1><p>{str(e)}</p>"
+
 # Company data input
 @app.route('/company-data', methods=['GET', 'POST'])
 def company_data():
@@ -1877,15 +1918,28 @@ def generate_model():
         else:
             # Use API data
             ticker = request.form.get('ticker')
-            if FinModAIPlatform and ticker:
+            print(f"🔍 Model generation requested: {model_type} for {ticker}")
+            
+            # Try to load FinModAI platform
+            platform = get_finmodai_platform()
+            print(f"🔍 FinModAI Platform loaded: {platform is not None}")
+            
+            if platform and ticker:
                 try:
-                    platform = FinModAIPlatform()
+                    print(f"🔍 Creating FinModAI Platform instance...")
+                    platform_instance = platform()
+                    print(f"🔍 Platform instance created: {platform_instance is not None}")
 
+                    print(f"🔍 Generating {model_type} model for {ticker}...")
                     # Generate the requested model type
-                    model_result = platform.generate_model(
+                    model_result = platform_instance.generate_model(
                         model_type=model_type,
                         company_identifier=ticker
                     )
+                    
+                    print(f"🔍 Model generation completed!")
+                    print(f"🔍 Model result type: {type(model_result)}")
+                    print(f"🔍 Model result keys: {list(model_result.keys()) if isinstance(model_result, dict) else 'Not a dict'}")
 
                     # Ensure downloadable files are staged where the UI expects them
                     try:
@@ -1949,9 +2003,20 @@ def generate_model():
                     flash(f"{model_type.upper()} model for {ticker} generated successfully!", "success")
                     return redirect(url_for('model_results', model_id=model_id))
                 except Exception as e:
+                    print(f"❌ Error generating model: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
                     flash(f"Error generating model: {str(e)}", "error")
             else:
-                flash("FinModAI platform not available or ticker not provided", "error")
+                if not platform:
+                    print("❌ FinModAI platform not available")
+                    flash("FinModAI platform not available", "error")
+                elif not ticker:
+                    print("❌ Ticker not provided")
+                    flash("Ticker not provided", "error")
+                else:
+                    print("❌ Unknown issue with platform or ticker")
+                    flash("Unknown issue with model generation", "error")
 
     return render_template_string(MODEL_GENERATION_HTML, companies=DATA_STORAGE)
 
