@@ -82,6 +82,10 @@ except Exception as e:
 
 print("🚀 Flask app initialized - ready for requests")
 
+# Memory management
+import gc
+gc.set_threshold(700, 10, 10)  # More aggressive garbage collection
+
 # Add error handler for uncaught exceptions
 @app.errorhandler(500)
 def internal_error(error):

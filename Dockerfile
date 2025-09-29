@@ -31,5 +31,5 @@ ENV FLASK_ENV=production
 ENV PORT=8080
 
 # Run the application
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 300 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50 --log-level info --access-logfile - --error-logfile - financial_models_ui:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 300 --keep-alive 5 --max-requests 50 --max-requests-jitter 5 --worker-class sync --log-level info --access-logfile - --error-logfile - financial_models_ui:app"]
 
