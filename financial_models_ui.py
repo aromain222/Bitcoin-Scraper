@@ -82,6 +82,19 @@ except Exception as e:
 
 print("🚀 Flask app initialized - ready for requests")
 
+# Add error handler for uncaught exceptions
+@app.errorhandler(500)
+def internal_error(error):
+    print(f"❌ Internal server error: {error}")
+    return "Internal Server Error - Check logs for details", 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print(f"❌ Unhandled exception: {e}")
+    import traceback
+    traceback.print_exc()
+    return "Application Error - Check logs for details", 500
+
 # HTML Templates for the web interface
 MAIN_DASHBOARD_HTML = """
 <!DOCTYPE html>
@@ -1747,7 +1760,14 @@ MODEL_RESULTS_HTML = """
 @app.route('/')
 def dashboard():
     """Main dashboard with navigation to all features"""
-    return render_template_string(MAIN_DASHBOARD_HTML)
+    try:
+        print("📊 Dashboard endpoint accessed")
+        return render_template_string(MAIN_DASHBOARD_HTML)
+    except Exception as e:
+        print(f"❌ Dashboard error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Dashboard Error: {str(e)}", 500
 
 @app.route('/health')
 def health_check():
@@ -1784,13 +1804,29 @@ def ping():
 @app.route('/status')
 def status():
     """Simple status endpoint for debugging"""
-    print("📊 Status endpoint hit!")
-    return {
-        "status": "running",
-        "app_ready": APP_READY,
-        "port": os.environ.get('PORT', 'not_set'),
-        "timestamp": datetime.now().isoformat()
-    }
+    try:
+        print("📊 Status endpoint hit!")
+        return {
+            "status": "running",
+            "app_ready": APP_READY,
+            "port": os.environ.get('PORT', 'not_set'),
+            "timestamp": datetime.now().isoformat(),
+            "python_version": sys.version,
+            "flask_app": "financial_models_ui"
+        }
+    except Exception as e:
+        print(f"❌ Status endpoint error: {e}")
+        return {"error": str(e)}, 500
+
+@app.route('/test')
+def test():
+    """Ultra-simple test endpoint"""
+    try:
+        print("🧪 Test endpoint hit!")
+        return "FinModAI Test - App is running!"
+    except Exception as e:
+        print(f"❌ Test endpoint error: {e}")
+        return f"Test Error: {str(e)}", 500
 
 # Company data input
 @app.route('/company-data', methods=['GET', 'POST'])
