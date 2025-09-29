@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os
 
-# Get port, default to 8080 if not set
-port = os.environ.get('PORT', '8080')
-print(f"Starting on port {port}")
+# Force port to 8080 - ignore Railway's PORT variable for now
+port = '8080'
+print(f"FORCING port to {port}")
 
 # Use exec to replace this process with gunicorn
 os.execvp('gunicorn', [
