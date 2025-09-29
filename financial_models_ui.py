@@ -1771,7 +1771,26 @@ def dashboard():
         print(f"❌ Dashboard error: {e}")
         import traceback
         traceback.print_exc()
-        return f"Dashboard Error: {str(e)}", 500
+        # Return simple fallback instead of error
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head><title>FinModAI - Dashboard Error</title></head>
+        <body>
+            <h1>FinModAI Dashboard</h1>
+            <p>Dashboard template failed to load. Using simple fallback.</p>
+            <h2>Available Pages:</h2>
+            <ul>
+                <li><a href="/simple">Simple Test Page</a></li>
+                <li><a href="/test-modules">Test Modules</a></li>
+                <li><a href="/debug-models">Debug Models</a></li>
+                <li><a href="/generate-model">Generate Model</a></li>
+                <li><a href="/status">Status</a></li>
+            </ul>
+            <p><strong>Error:</strong> """ + str(e) + """</p>
+        </body>
+        </html>
+        """
 
 @app.route('/health')
 def health_check():
@@ -1804,6 +1823,23 @@ def ping():
     """Ultra-simple ping endpoint"""
     print("🏓 Ping endpoint hit!")
     return "pong"
+
+@app.route('/simple')
+def simple():
+    """Ultra-simple HTML page"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><title>FinModAI - Simple Test</title></head>
+    <body>
+        <h1>FinModAI is Working!</h1>
+        <p>This is a simple test page.</p>
+        <a href="/test-modules">Test Modules</a> | 
+        <a href="/debug-models">Debug Models</a> |
+        <a href="/status">Status</a>
+    </body>
+    </html>
+    """
 
 @app.route('/status')
 def status():
