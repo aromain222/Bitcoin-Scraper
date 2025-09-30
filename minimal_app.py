@@ -1737,7 +1737,7 @@ def generate_model():
             flash(f'Error generating model: {str(e)}', 'error')
             return redirect(url_for('generate_model'))
     
-    return '''
+    return render_template_string('''
     <!DOCTYPE html>
     <html lang="en" class="h-full">
     <head>
@@ -2056,7 +2056,7 @@ def generate_model():
         </script>
     </body>
     </html>
-    '''
+    ''')
 
 @app.route('/model-results/<model_id>')
 def model_results(model_id):
