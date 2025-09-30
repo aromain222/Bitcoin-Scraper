@@ -2032,27 +2032,24 @@ def generate_model():
                 const form = document.querySelector('form');
                 if (form) {
                     form.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        
                         const formData = new FormData(form);
                         const ticker = formData.get('ticker');
-                        const modelType = formData.get('model_type');
-                        const useMarketData = formData.get('use_market_data') === 'true';
-                        const scenario = formData.get('scenario');
                         
-                        if (!ticker) {
+                        if (!ticker || ticker.trim() === '') {
+                            e.preventDefault();
                             alert('Please enter a company ticker');
-                            return;
+                            return false;
                         }
                         
-                        // Show loading state
+                        // Show loading state (don't prevent default, let form submit naturally)
                         const submitBtn = form.querySelector('button[type="submit"]');
-                        const originalText = submitBtn.innerHTML;
-                        submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Generating...';
-                        submitBtn.disabled = true;
+                        if (submitBtn) {
+                            submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Generating...';
+                            submitBtn.disabled = true;
+                        }
                         
-                        // Submit form normally (let Flask handle it)
-                        form.submit();
+                        // Let the form submit naturally to Flask
+                        return true;
                     });
                 }
             });
