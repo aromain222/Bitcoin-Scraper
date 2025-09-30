@@ -3,13 +3,18 @@
 Minimal FinModAI app for testing
 """
 
-from flask import Flask, request, redirect, url_for, flash, render_template_string, jsonify
+from flask import Flask, request, redirect, url_for, flash, render_template_string, jsonify, send_file
 import json
 import uuid
 from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils.dataframe import dataframe_to_rows
+import io
+import os
 
 # Create Flask app
 app = Flask(__name__)
@@ -233,6 +238,337 @@ class FinancialDataEngine:
 
 # Initialize the financial data engine
 financial_engine = FinancialDataEngine()
+
+class ExcelModelGenerator:
+    """Generate professional Excel financial models"""
+    
+    def __init__(self):
+        self.header_font = Font(bold=True, color="FFFFFF")
+        self.header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+        self.number_font = Font(name="Calibri", size=11)
+        self.currency_format = '"$"#,##0.0_);[Red]("$"#,##0.0)'
+        self.percent_format = '0.0%'
+        self.border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+    
+    def generate_dcf_model(self, model_data):
+        """Generate a professional DCF Excel model"""
+        wb = openpyxl.Workbook()
+        
+        # Remove default sheet and create our sheets
+        wb.remove(wb.active)
+        
+        # Create sheets
+        summary_ws = wb.create_sheet("Executive Summary")
+        dcf_ws = wb.create_sheet("DCF Model")
+        assumptions_ws = wb.create_sheet("Assumptions")
+        
+        # Generate each sheet
+        self._create_summary_sheet(summary_ws, model_data)
+        self._create_dcf_sheet(dcf_ws, model_data)
+        self._create_assumptions_sheet(assumptions_ws, model_data)
+        
+        return wb
+    
+    def _create_summary_sheet(self, ws, model_data):
+        """Create executive summary sheet"""
+        company_data = model_data.get('company_data', {})
+        scenarios = model_data.get('scenarios', {})
+        
+        # Title
+        ws['A1'] = f"DCF Valuation - {company_data.get('company_name', 'Company')}"
+        ws['A1'].font = Font(bold=True, size=16)
+        ws.merge_cells('A1:F1')
+        
+        # Company info
+        row = 3
+        ws[f'A{row}'] = "Ticker:"
+        ws[f'B{row}'] = company_data.get('ticker', '')
+        ws[f'A{row}'].font = Font(bold=True)
+        
+        row += 1
+        ws[f'A{row}'] = "Sector:"
+        ws[f'B{row}'] = company_data.get('sector', '')
+        ws[f'A{row}'].font = Font(bold=True)
+        
+        row += 1
+        ws[f'A{row}'] = "Market Cap:"
+        ws[f'B{row}'] = company_data.get('market_cap', 0) / 1e9
+        ws[f'B{row}'].number_format = '"$"#,##0.0"B"'
+        ws[f'A{row}'].font = Font(bold=True)
+        
+        row += 1
+        ws[f'A{row}'] = "Current Price:"
+        ws[f'B{row}'] = company_data.get('current_price', 0)
+        ws[f'B{row}'].number_format = self.currency_format
+        ws[f'A{row}'].font = Font(bold=True)
+        
+        # Valuation summary
+        row += 3
+        ws[f'A{row}'] = "VALUATION SUMMARY"
+        ws[f'A{row}'].font = self.header_font
+        ws[f'A{row}'].fill = self.header_fill
+        ws.merge_cells(f'A{row}:F{row}')
+        
+        row += 2
+        headers = ['Scenario', 'Enterprise Value', 'Equity Value', 'Implied Price', 'Current Price', 'Upside/Downside']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+        
+        # Add scenario data
+        for scenario_name, scenario_data in scenarios.items():
+            row += 1
+            ws.cell(row=row, column=1, value=scenario_name.title())
+            ws.cell(row=row, column=2, value=scenario_data.get('enterprise_value', 0) / 1e9)
+            ws.cell(row=row, column=3, value=scenario_data.get('equity_value', 0) / 1e9)
+            ws.cell(row=row, column=4, value=scenario_data.get('implied_price', 0))
+            ws.cell(row=row, column=5, value=scenario_data.get('current_price', 0))
+            ws.cell(row=row, column=6, value=scenario_data.get('upside_downside', 0) / 100)
+            
+            # Format numbers
+            ws.cell(row=row, column=2).number_format = '"$"#,##0.0"B"'
+            ws.cell(row=row, column=3).number_format = '"$"#,##0.0"B"'
+            ws.cell(row=row, column=4).number_format = self.currency_format
+            ws.cell(row=row, column=5).number_format = self.currency_format
+            ws.cell(row=row, column=6).number_format = self.percent_format
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 20)
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    def _create_dcf_sheet(self, ws, model_data):
+        """Create detailed DCF model sheet"""
+        company_data = model_data.get('company_data', {})
+        base_scenario = model_data.get('scenarios', {}).get('base', {})
+        assumptions = model_data.get('assumptions', {}).get('base', {})
+        
+        # Title
+        ws['A1'] = f"DCF Model - {company_data.get('company_name', 'Company')}"
+        ws['A1'].font = Font(bold=True, size=14)
+        ws.merge_cells('A1:H1')
+        
+        # Years header
+        row = 3
+        ws[f'A{row}'] = "Projection Period"
+        ws[f'A{row}'].font = Font(bold=True)
+        
+        years = ['Base Year', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Terminal']
+        for col, year in enumerate(years, 2):
+            cell = ws.cell(row=row, column=col, value=year)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+            cell.font = Font(bold=True, color="FFFFFF")
+        
+        # Revenue projections
+        row += 2
+        ws[f'A{row}'] = "REVENUE PROJECTIONS"
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+        
+        row += 1
+        ws[f'A{row}'] = "Revenue ($M)"
+        base_revenue = company_data.get('revenue', 1000000000) / 1e6  # Convert to millions
+        
+        # Base year
+        ws.cell(row=row, column=2, value=base_revenue)
+        
+        # Projected years
+        for year in range(1, 6):
+            growth_rate = assumptions.get(f'revenue_growth_{year}', 0.05)
+            revenue = base_revenue * ((1 + growth_rate) ** year)
+            ws.cell(row=row, column=year + 2, value=revenue)
+        
+        # Terminal year
+        terminal_growth = assumptions.get('terminal_growth', 0.025)
+        terminal_revenue = base_revenue * ((1 + assumptions.get('revenue_growth_5', 0.05)) ** 5) * (1 + terminal_growth)
+        ws.cell(row=row, column=8, value=terminal_revenue)
+        
+        # Format revenue row
+        for col in range(2, 9):
+            ws.cell(row=row, column=col).number_format = '"$"#,##0.0'
+        
+        # Operating metrics
+        row += 2
+        ws[f'A{row}'] = "OPERATING METRICS"
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+        
+        row += 1
+        ws[f'A{row}'] = "Operating Margin"
+        operating_margin = assumptions.get('operating_margin', 0.15)
+        for col in range(2, 9):
+            ws.cell(row=row, column=col, value=operating_margin)
+            ws.cell(row=row, column=col).number_format = self.percent_format
+        
+        row += 1
+        ws[f'A{row}'] = "Tax Rate"
+        tax_rate = assumptions.get('tax_rate', 0.25)
+        for col in range(2, 9):
+            ws.cell(row=row, column=col, value=tax_rate)
+            ws.cell(row=row, column=col).number_format = self.percent_format
+        
+        # Cash flow calculations
+        row += 2
+        ws[f'A{row}'] = "FREE CASH FLOW"
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+        
+        cash_flows = base_scenario.get('cash_flows', [0] * 5)
+        
+        row += 1
+        ws[f'A{row}'] = "Free Cash Flow ($M)"
+        ws.cell(row=row, column=2, value=0)  # Base year
+        
+        for i, cf in enumerate(cash_flows, 1):
+            ws.cell(row=row, column=i + 2, value=cf / 1e6)  # Convert to millions
+            ws.cell(row=row, column=i + 2).number_format = '"$"#,##0.0'
+        
+        # Terminal FCF
+        if cash_flows:
+            terminal_fcf = cash_flows[-1] * (1 + terminal_growth) / 1e6
+            ws.cell(row=row, column=8, value=terminal_fcf)
+            ws.cell(row=row, column=8).number_format = '"$"#,##0.0'
+        
+        # Valuation
+        row += 2
+        ws[f'A{row}'] = "VALUATION"
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'A{row}'].fill = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+        
+        row += 1
+        ws[f'A{row}'] = "WACC"
+        ws[f'B{row}'] = assumptions.get('wacc', 0.10)
+        ws[f'B{row}'].number_format = self.percent_format
+        
+        row += 1
+        ws[f'A{row}'] = "Terminal Growth Rate"
+        ws[f'B{row}'] = terminal_growth
+        ws[f'B{row}'].number_format = self.percent_format
+        
+        row += 1
+        ws[f'A{row}'] = "Enterprise Value ($B)"
+        ws[f'B{row}'] = base_scenario.get('enterprise_value', 0) / 1e9
+        ws[f'B{row}'].number_format = '"$"#,##0.0'
+        
+        row += 1
+        ws[f'A{row}'] = "Equity Value ($B)"
+        ws[f'B{row}'] = base_scenario.get('equity_value', 0) / 1e9
+        ws[f'B{row}'].number_format = '"$"#,##0.0'
+        
+        row += 1
+        ws[f'A{row}'] = "Implied Share Price"
+        ws[f'B{row}'] = base_scenario.get('implied_price', 0)
+        ws[f'B{row}'].number_format = self.currency_format
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 20)
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    def _create_assumptions_sheet(self, ws, model_data):
+        """Create assumptions sheet"""
+        assumptions = model_data.get('assumptions', {})
+        company_data = model_data.get('company_data', {})
+        
+        # Title
+        ws['A1'] = "Model Assumptions"
+        ws['A1'].font = Font(bold=True, size=14)
+        ws.merge_cells('A1:D1')
+        
+        row = 3
+        
+        # Company data section
+        ws[f'A{row}'] = "COMPANY DATA"
+        ws[f'A{row}'].font = self.header_font
+        ws[f'A{row}'].fill = self.header_fill
+        ws.merge_cells(f'A{row}:D{row}')
+        
+        company_items = [
+            ('Company Name', company_data.get('company_name', '')),
+            ('Ticker', company_data.get('ticker', '')),
+            ('Sector', company_data.get('sector', '')),
+            ('Market Cap ($B)', company_data.get('market_cap', 0) / 1e9),
+            ('Current Price', company_data.get('current_price', 0)),
+            ('Shares Outstanding (M)', company_data.get('shares_outstanding', 0) / 1e6),
+            ('Beta', company_data.get('beta', 0)),
+        ]
+        
+        for item, value in company_items:
+            row += 1
+            ws[f'A{row}'] = item
+            ws[f'B{row}'] = value
+            ws[f'A{row}'].font = Font(bold=True)
+            
+            if 'Price' in item or 'Market Cap' in item:
+                ws[f'B{row}'].number_format = self.currency_format
+        
+        # Scenario assumptions
+        for scenario_name, scenario_assumptions in assumptions.items():
+            row += 3
+            ws[f'A{row}'] = f"{scenario_name.upper()} CASE ASSUMPTIONS"
+            ws[f'A{row}'].font = self.header_font
+            ws[f'A{row}'].fill = self.header_fill
+            ws.merge_cells(f'A{row}:D{row}')
+            
+            assumption_items = [
+                ('Revenue Growth Year 1', scenario_assumptions.get('revenue_growth_1', 0)),
+                ('Revenue Growth Year 2', scenario_assumptions.get('revenue_growth_2', 0)),
+                ('Revenue Growth Year 3', scenario_assumptions.get('revenue_growth_3', 0)),
+                ('Revenue Growth Year 4', scenario_assumptions.get('revenue_growth_4', 0)),
+                ('Revenue Growth Year 5', scenario_assumptions.get('revenue_growth_5', 0)),
+                ('Operating Margin', scenario_assumptions.get('operating_margin', 0)),
+                ('Tax Rate', scenario_assumptions.get('tax_rate', 0)),
+                ('WACC', scenario_assumptions.get('wacc', 0)),
+                ('Terminal Growth Rate', scenario_assumptions.get('terminal_growth', 0)),
+                ('CapEx % of Revenue', scenario_assumptions.get('capex_percent', 0)),
+                ('NWC % of Revenue', scenario_assumptions.get('nwc_percent', 0)),
+            ]
+            
+            for item, value in assumption_items:
+                row += 1
+                ws[f'A{row}'] = item
+                ws[f'B{row}'] = value
+                ws[f'A{row}'].font = Font(bold=True)
+                ws[f'B{row}'].number_format = self.percent_format
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 25)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+# Initialize Excel generator
+excel_generator = ExcelModelGenerator()
 
 def generate_valuation_html(result):
     """Generate HTML for valuation results with scenario support"""
@@ -595,6 +931,62 @@ def get_company_data_api(ticker):
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/download-model/<model_id>')
+def download_model(model_id):
+    """Download Excel model file"""
+    try:
+        if model_id not in MODEL_STORAGE:
+            flash('Model not found', 'error')
+            return redirect(url_for('list_models'))
+        
+        model = MODEL_STORAGE[model_id]
+        result = model['result']
+        
+        # Generate Excel file
+        if model['type'] == 'dcf' and result.get('scenarios'):
+            # Real DCF model with scenarios
+            wb = excel_generator.generate_dcf_model(result)
+        else:
+            # Fallback - create a simple model
+            wb = excel_generator.generate_dcf_model({
+                'company_data': {
+                    'company_name': result.get('company_name', f"{model['ticker']} Corporation"),
+                    'ticker': model['ticker'],
+                    'sector': result.get('sector', 'Unknown'),
+                    'market_cap': 1000000000,
+                    'current_price': 100,
+                    'shares_outstanding': 10000000,
+                    'beta': 1.0
+                },
+                'scenarios': {
+                    'base': result.get('model_summary', {}).get('valuation_outputs', {})
+                },
+                'assumptions': {
+                    'base': result.get('model_summary', {}).get('key_assumptions', {})
+                }
+            })
+        
+        # Save to memory buffer
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        # Generate filename
+        timestamp = datetime.now().strftime('%Y-%m-%d')
+        filename = f"{model['type'].upper()}_{model['ticker']}_{timestamp}.xlsx"
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+    except Exception as e:
+        print(f"Error generating Excel file: {e}")
+        flash(f'Error generating Excel file: {str(e)}', 'error')
+        return redirect(url_for('model_results', model_id=model_id))
 
 @app.route('/status')
 def status():
@@ -1071,14 +1463,14 @@ def model_results(model_id):
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h3 class="font-medium text-gray-900 mb-4">Your Excel Model</h3>
                             <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                                <p class="text-sm font-mono text-gray-700">{model['type'].upper()}_{model['ticker']}_2025-09-29.xlsx</p>
+                                <p class="text-sm font-mono text-gray-700">{model['type'].upper()}_{model['ticker']}_{datetime.now().strftime('%Y-%m-%d')}.xlsx</p>
                             </div>
-                            <button class="w-full bg-navy text-white px-4 py-2 rounded-lg font-medium hover:bg-navy/90 transition-colors flex items-center justify-center">
+                            <a href="/download-model/{model_id}" class="w-full bg-navy text-white px-4 py-2 rounded-lg font-medium hover:bg-navy/90 transition-colors flex items-center justify-center">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                                 Download Excel
-                            </button>
+                            </a>
                         </div>
 
                         <!-- Key Assumptions -->
