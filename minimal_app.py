@@ -784,15 +784,23 @@ class ExcelModelGenerator:
         # Auto-adjust column widths
         for column in ws.columns:
             max_length = 0
-            column_letter = column[0].column_letter
+            column_letter = None
+            
+            # Find the first non-merged cell to get column letter
             for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 20)
-            ws.column_dimensions[column_letter].width = adjusted_width
+                if hasattr(cell, 'column_letter'):
+                    column_letter = cell.column_letter
+                    break
+            
+            if column_letter:
+                for cell in column:
+                    try:
+                        if hasattr(cell, 'value') and len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 20)
+                ws.column_dimensions[column_letter].width = adjusted_width
     
     def _create_dcf_sheet(self, ws, model_data):
         """Create detailed DCF model sheet"""
@@ -921,15 +929,23 @@ class ExcelModelGenerator:
         # Auto-adjust column widths
         for column in ws.columns:
             max_length = 0
-            column_letter = column[0].column_letter
+            column_letter = None
+            
+            # Find the first non-merged cell to get column letter
             for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 20)
-            ws.column_dimensions[column_letter].width = adjusted_width
+                if hasattr(cell, 'column_letter'):
+                    column_letter = cell.column_letter
+                    break
+            
+            if column_letter:
+                for cell in column:
+                    try:
+                        if hasattr(cell, 'value') and len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 20)
+                ws.column_dimensions[column_letter].width = adjusted_width
     
     def _create_assumptions_sheet(self, ws, model_data):
         """Create assumptions sheet"""
@@ -1000,15 +1016,23 @@ class ExcelModelGenerator:
         # Auto-adjust column widths
         for column in ws.columns:
             max_length = 0
-            column_letter = column[0].column_letter
+            column_letter = None
+            
+            # Find the first non-merged cell to get column letter
             for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 25)
-            ws.column_dimensions[column_letter].width = adjusted_width
+                if hasattr(cell, 'column_letter'):
+                    column_letter = cell.column_letter
+                    break
+            
+            if column_letter:
+                for cell in column:
+                    try:
+                        if hasattr(cell, 'value') and len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 25)
+                ws.column_dimensions[column_letter].width = adjusted_width
 
 # Initialize Excel generator
 excel_generator = ExcelModelGenerator()
