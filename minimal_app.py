@@ -570,6 +570,36 @@ class ExcelModelGenerator:
 # Initialize Excel generator
 excel_generator = ExcelModelGenerator()
 
+def cleanup_old_files():
+    """Clean up old Excel files from temp directory"""
+    try:
+        temp_dir = '/tmp'
+        if not os.path.exists(temp_dir):
+            return
+        
+        current_time = datetime.now()
+        
+        for filename in os.listdir(temp_dir):
+            if filename.endswith('.xlsx'):
+                file_path = os.path.join(temp_dir, filename)
+                try:
+                    # Get file modification time
+                    file_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+                    
+                    # Delete files older than 4 hours
+                    if (current_time - file_time).total_seconds() > 4 * 3600:
+                        os.remove(file_path)
+                        print(f"Cleaned up old file: {filename}")
+                        
+                except Exception as e:
+                    print(f"Error cleaning up file {filename}: {e}")
+                    
+    except Exception as e:
+        print(f"Error in cleanup_old_files: {e}")
+
+# Clean up old files on startup
+cleanup_old_files()
+
 def generate_valuation_html(result):
     """Generate HTML for valuation results with scenario support"""
     
@@ -739,6 +769,73 @@ def format_assumptions_html(result):
         <div class="flex justify-between">
             <span class="text-sm text-gray-600">Tax Rate</span>
             <span class="text-sm font-medium text-gray-900">{assumptions.get('tax_rate', 0)*100:.1f}%</span>
+        </div>
+        '''
+
+def generate_download_section(model):
+    """Generate download section with proper states"""
+    file_ready = model.get('file_ready', False)
+    excel_filename = model.get('excel_filename')
+    
+    if file_ready and excel_filename:
+        # File is ready for download
+        return f'''
+        <!-- Success State -->
+        <div class="bg-success-bg border border-success/20 rounded-lg p-3 mb-4">
+            <div class="flex items-center">
+                <svg class="w-4 h-4 text-success mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-success">Your model is ready. Click below to download.</span>
+            </div>
+        </div>
+        
+        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+            <p class="text-sm font-mono text-gray-700">{excel_filename}</p>
+        </div>
+        
+        <a href="/download/{excel_filename}" class="w-full bg-navy text-white px-4 py-2 rounded-lg font-medium hover:bg-navy/90 transition-colors flex items-center justify-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Download Excel
+        </a>
+        
+        <p class="text-xs text-gray-500 mt-3">
+            <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Files are temporary and may be deleted after a few hours.
+        </p>
+        '''
+    else:
+        # File not ready or failed to generate
+        return f'''
+        <!-- Error State -->
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <div class="flex items-center">
+                <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-red-800">Model not found. Please regenerate.</span>
+            </div>
+        </div>
+        
+        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+            <p class="text-sm text-gray-500">Excel file not available</p>
+        </div>
+        
+        <button disabled class="w-full bg-gray-300 text-gray-500 px-4 py-2 rounded-lg font-medium cursor-not-allowed flex items-center justify-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Download Unavailable
+        </button>
+        
+        <div class="mt-3">
+            <a href="/generate-model" class="text-sm text-navy hover:text-navy/80 font-medium">
+                ← Generate a new model
+            </a>
         </div>
         '''
 
@@ -932,61 +1029,88 @@ def get_company_data_api(ticker):
             'error': str(e)
         }), 500
 
-@app.route('/download-model/<model_id>')
-def download_model(model_id):
-    """Download Excel model file"""
+@app.route('/download/<filename>')
+def download_file(filename):
+    """Download Excel file from temp directory"""
     try:
-        if model_id not in MODEL_STORAGE:
-            flash('Model not found', 'error')
-            return redirect(url_for('list_models'))
+        # Security: Only allow .xlsx files and sanitize filename
+        if not filename.endswith('.xlsx') or '..' in filename or '/' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
         
-        model = MODEL_STORAGE[model_id]
-        result = model['result']
+        file_path = os.path.join('/tmp', filename)
         
-        # Generate Excel file
-        if model['type'] == 'dcf' and result.get('scenarios'):
-            # Real DCF model with scenarios
-            wb = excel_generator.generate_dcf_model(result)
-        else:
-            # Fallback - create a simple model
-            wb = excel_generator.generate_dcf_model({
-                'company_data': {
-                    'company_name': result.get('company_name', f"{model['ticker']} Corporation"),
-                    'ticker': model['ticker'],
-                    'sector': result.get('sector', 'Unknown'),
-                    'market_cap': 1000000000,
-                    'current_price': 100,
-                    'shares_outstanding': 10000000,
-                    'beta': 1.0
-                },
-                'scenarios': {
-                    'base': result.get('model_summary', {}).get('valuation_outputs', {})
-                },
-                'assumptions': {
-                    'base': result.get('model_summary', {}).get('key_assumptions', {})
-                }
-            })
+        # Check if file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'Model not found. Please regenerate.'}), 404
         
-        # Save to memory buffer
-        buffer = io.BytesIO()
-        wb.save(buffer)
-        buffer.seek(0)
-        
-        # Generate filename
-        timestamp = datetime.now().strftime('%Y-%m-%d')
-        filename = f"{model['type'].upper()}_{model['ticker']}_{timestamp}.xlsx"
-        
+        # Send file with proper headers
         return send_file(
-            buffer,
+            file_path,
             as_attachment=True,
             download_name=filename,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         
     except Exception as e:
-        print(f"Error generating Excel file: {e}")
-        flash(f'Error generating Excel file: {str(e)}', 'error')
-        return redirect(url_for('model_results', model_id=model_id))
+        print(f"Error serving file {filename}: {e}")
+        return jsonify({'error': 'Download failed'}), 500
+
+@app.route('/download-model/<model_id>')
+def download_model(model_id):
+    """Legacy download route - redirects to new file-based download"""
+    try:
+        if model_id not in MODEL_STORAGE:
+            return jsonify({'error': 'Model not found'}), 404
+        
+        model = MODEL_STORAGE[model_id]
+        
+        # Check if Excel file was generated
+        if model.get('excel_filename'):
+            return redirect(url_for('download_file', filename=model['excel_filename']))
+        else:
+            # Fallback: generate file on-demand
+            result = model['result']
+            
+            if model['type'] == 'dcf' and result.get('scenarios'):
+                wb = excel_generator.generate_dcf_model(result)
+            else:
+                # Create fallback model
+                wb = excel_generator.generate_dcf_model({
+                    'company_data': {
+                        'company_name': result.get('company_name', f"{model['ticker']} Corporation"),
+                        'ticker': model['ticker'],
+                        'sector': result.get('sector', 'Unknown'),
+                        'market_cap': 1000000000,
+                        'current_price': 100,
+                        'shares_outstanding': 10000000,
+                        'beta': 1.0
+                    },
+                    'scenarios': {
+                        'base': result.get('model_summary', {}).get('valuation_outputs', {})
+                    },
+                    'assumptions': {
+                        'base': result.get('model_summary', {}).get('key_assumptions', {})
+                    }
+                })
+            
+            # Save to memory buffer and serve directly
+            buffer = io.BytesIO()
+            wb.save(buffer)
+            buffer.seek(0)
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{model['type'].upper()}_{model['ticker']}_{timestamp}.xlsx"
+            
+            return send_file(
+                buffer,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        
+    except Exception as e:
+        print(f"Error in download_model: {e}")
+        return jsonify({'error': 'Download failed'}), 500
 
 @app.route('/status')
 def status():
@@ -1084,13 +1208,39 @@ def generate_model():
                     }
                 }
             
+            # Generate Excel file and save to temp directory
+            excel_filename = None
+            if model_type == 'dcf' and use_market_data and model_result.get('scenarios'):
+                try:
+                    # Generate Excel file
+                    wb = excel_generator.generate_dcf_model(model_result)
+                    
+                    # Create temp directory if it doesn't exist
+                    temp_dir = '/tmp'
+                    os.makedirs(temp_dir, exist_ok=True)
+                    
+                    # Generate filename
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    excel_filename = f"{model_type.upper()}_{ticker}_{timestamp}.xlsx"
+                    file_path = os.path.join(temp_dir, excel_filename)
+                    
+                    # Save Excel file
+                    wb.save(file_path)
+                    print(f"Excel file saved: {file_path}")
+                    
+                except Exception as e:
+                    print(f"Error generating Excel file: {e}")
+                    excel_filename = None
+            
             MODEL_STORAGE[model_id] = {
                 'id': model_id,
                 'type': model_type,
                 'ticker': ticker,
                 'result': model_result,
                 'timestamp': datetime.now().isoformat(),
-                'status': 'completed'
+                'status': 'completed',
+                'excel_filename': excel_filename,
+                'file_ready': excel_filename is not None
             }
             
             return redirect(url_for('model_results', model_id=model_id))
@@ -1462,15 +1612,8 @@ def model_results(model_id):
                         <!-- Download Card -->
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h3 class="font-medium text-gray-900 mb-4">Your Excel Model</h3>
-                            <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                                <p class="text-sm font-mono text-gray-700">{model['type'].upper()}_{model['ticker']}_{datetime.now().strftime('%Y-%m-%d')}.xlsx</p>
-                            </div>
-                            <a href="/download-model/{model_id}" class="w-full bg-navy text-white px-4 py-2 rounded-lg font-medium hover:bg-navy/90 transition-colors flex items-center justify-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Download Excel
-                            </a>
+                            
+{generate_download_section(model)}
                         </div>
 
                         <!-- Key Assumptions -->
