@@ -590,17 +590,23 @@ class FinancialDataEngine:
             }
         }
     
-    def _calculate_dcf_valuation(self, company_data, assumptions):
-        """Calculate DCF valuation with given assumptions"""
-        try:
-            # Starting revenue (use actual if available, otherwise estimate from market cap)
-            revenue = company_data.get('revenue', 0)
-            if revenue == 0 and company_data.get('market_cap', 0) > 0:
-                # Estimate revenue from market cap using industry average P/S ratio
-                revenue = company_data['market_cap'] / 3  # Assume 3x P/S ratio
-            
-            if revenue == 0:
-                revenue = 1000000000  # Default $1B if no data
+        def _calculate_dcf_valuation(self, company_data, assumptions):
+            """Calculate DCF valuation with given assumptions"""
+            try:
+                # Starting revenue (use actual if available, otherwise estimate from market cap)
+                revenue = company_data.get('revenue', 0)
+                print(f"🔍 Initial revenue from company_data: ${revenue:,.0f}")
+                
+                if revenue == 0 and company_data.get('market_cap', 0) > 0:
+                    # Estimate revenue from market cap using industry average P/S ratio
+                    revenue = company_data['market_cap'] / 3  # Assume 3x P/S ratio
+                    print(f"🔍 Estimated revenue from market cap: ${revenue:,.0f}")
+                
+                if revenue == 0:
+                    revenue = 1000000000  # Default $1B if no data
+                    print(f"🔍 Using default revenue: ${revenue:,.0f}")
+                else:
+                    print(f"🔍 Final revenue for DCF: ${revenue:,.0f}")
             
             # Project 5 years of cash flows
             years = 5
@@ -634,10 +640,16 @@ class FinancialDataEngine:
             
             # Enterprise value
             enterprise_value = sum(pv_cash_flows) + pv_terminal
+            print(f"🔍 DCF Calculation Details:")
+            print(f"   Sum of PV Cash Flows: ${sum(pv_cash_flows):,.0f}")
+            print(f"   PV Terminal Value: ${pv_terminal:,.0f}")
+            print(f"   Enterprise Value: ${enterprise_value:,.0f}")
             
             # Equity value (subtract net debt)
             net_debt = company_data.get('total_debt', 0) - company_data.get('total_cash', 0)
             equity_value = enterprise_value - net_debt
+            print(f"   Net Debt: ${net_debt:,.0f}")
+            print(f"   Equity Value: ${equity_value:,.0f}")
             
             # Per share value
             shares = company_data.get('shares_outstanding', 0)
@@ -645,6 +657,8 @@ class FinancialDataEngine:
                 shares = company_data.get('market_cap', 0) / max(company_data.get('current_price', 100), 1)
             
             implied_price = equity_value / shares if shares > 0 else 0
+            print(f"   Shares Outstanding: {shares:,.0f}")
+            print(f"   Implied Price: ${implied_price:.2f}")
             
             return {
                 'enterprise_value': float(enterprise_value),
@@ -1913,7 +1927,7 @@ def generate_model():
             
             # Generate Excel file and save to temp directory
             excel_filename = None
-            if model_type == 'dcf' and use_market_data and model_result.get('scenarios'):
+            if model_type == 'dcf' and model_result:  # Generate Excel for any DCF model with results
                 try:
                     print(f"📄 Generating Excel file for {ticker}")
                     # Generate Excel file
@@ -1931,6 +1945,13 @@ def generate_model():
                     # Save Excel file
                     wb.save(file_path)
                     print(f"✅ Excel file saved: {file_path}")
+                    
+                    # Verify file exists
+                    if os.path.exists(file_path):
+                        print(f"✅ File verified at: {file_path}")
+                    else:
+                        print(f"❌ File not found after save: {file_path}")
+                        excel_filename = None
                     
                 except Exception as e:
                     print(f"❌ Error generating Excel file: {e}")
