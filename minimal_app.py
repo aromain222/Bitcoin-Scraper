@@ -1526,6 +1526,73 @@ def test_session_flow():
 def test():
     return "Minimal FinModAI Test - Working!"
 
+@app.route('/debug-form', methods=['GET', 'POST'])
+def debug_form():
+    """Debug endpoint to test form submission"""
+    if request.method == 'POST':
+        form_data = {
+            'ticker': request.form.get('ticker'),
+            'model_type': request.form.get('model_type'),
+            'use_market_data': request.form.get('use_market_data'),
+            'scenario': request.form.get('scenario'),
+            'all_form_data': dict(request.form)
+        }
+        
+        return jsonify({
+            'message': 'Form received successfully!',
+            'method': 'POST',
+            'form_data': form_data,
+            'timestamp': datetime.now().isoformat()
+        })
+    
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Debug Form Test</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-100 p-8">
+        <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
+            <h1 class="text-xl font-bold mb-4">Debug Form Test</h1>
+            <form method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Ticker:</label>
+                    <input type="text" name="ticker" value="AAPL" class="w-full border rounded px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Model Type:</label>
+                    <select name="model_type" class="w-full border rounded px-3 py-2">
+                        <option value="dcf">DCF</option>
+                        <option value="lbo">LBO</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="use_market_data" value="true" checked class="mr-2">
+                        Use Market Data
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Scenario:</label>
+                    <select name="scenario" class="w-full border rounded px-3 py-2">
+                        <option value="base">Base</option>
+                        <option value="bull">Bull</option>
+                        <option value="bear">Bear</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
+                    Test Submit
+                </button>
+            </form>
+            <div class="mt-4">
+                <a href="/generate-model" class="text-blue-500 hover:underline">← Back to Generate Model</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+
 @app.route('/generate-model', methods=['GET', 'POST'])
 def generate_model():
     if request.method == 'POST':
