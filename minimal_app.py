@@ -1542,14 +1542,20 @@ def generate_model():
             start_time = datetime.now()
             model_id = str(uuid.uuid4())
             
+            print(f"🚀 Starting model generation: {model_type} for {ticker}")
+            print(f"📊 Use market data: {use_market_data}, Scenario: {scenario}")
+            
             if model_type == 'dcf' and use_market_data:
                 # Use real financial data for DCF
+                print(f"📈 Fetching real financial data for {ticker}")
                 dcf_data = financial_engine.calculate_dcf_scenarios(ticker)
                 
                 if not dcf_data:
+                    print(f"❌ Could not fetch financial data for {ticker}")
                     flash(f'Could not fetch financial data for {ticker}. Please check the ticker symbol.', 'error')
                     return redirect(url_for('generate_model'))
                 
+                print(f"✅ Financial data fetched successfully for {ticker}")
                 company_data = dcf_data['company_data']
                 scenarios = dcf_data['scenarios']
                 assumptions = dcf_data['assumptions']
@@ -1580,8 +1586,10 @@ def generate_model():
                         'valuation_outputs': scenarios['base']  # Default to base case for summary
                     }
                 }
+                print(f"📊 DCF model created with real data for {company_data['company_name']}")
             else:
                 # Fallback to mock data for other model types or when market data is disabled
+                print(f"📋 Using mock data for {model_type} model")
                 processing_time = (datetime.now() - start_time).total_seconds()
                 
                 model_result = {
@@ -1613,6 +1621,7 @@ def generate_model():
             excel_filename = None
             if model_type == 'dcf' and use_market_data and model_result.get('scenarios'):
                 try:
+                    print(f"📄 Generating Excel file for {ticker}")
                     # Generate Excel file
                     wb = excel_generator.generate_dcf_model(model_result)
                     
@@ -1627,10 +1636,12 @@ def generate_model():
                     
                     # Save Excel file
                     wb.save(file_path)
-                    print(f"Excel file saved: {file_path}")
+                    print(f"✅ Excel file saved: {file_path}")
                     
                 except Exception as e:
-                    print(f"Error generating Excel file: {e}")
+                    print(f"❌ Error generating Excel file: {e}")
+                    import traceback
+                    traceback.print_exc()
                     excel_filename = None
             
             MODEL_STORAGE[model_id] = {
@@ -1644,9 +1655,13 @@ def generate_model():
                 'file_ready': excel_filename is not None
             }
             
+            print(f"🎉 Model {model_id} created successfully for {ticker}")
             return redirect(url_for('model_results', model_id=model_id))
             
         except Exception as e:
+            print(f"❌ Error generating model: {str(e)}")
+            import traceback
+            traceback.print_exc()
             flash(f'Error generating model: {str(e)}', 'error')
             return redirect(url_for('generate_model'))
     
@@ -1916,6 +1931,36 @@ def generate_model():
                     previewPanel.remove();
                 }
             }
+
+            // Form submission handler
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.querySelector('form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        
+                        const formData = new FormData(form);
+                        const ticker = formData.get('ticker');
+                        const modelType = formData.get('model_type');
+                        const useMarketData = formData.get('use_market_data') === 'true';
+                        const scenario = formData.get('scenario');
+                        
+                        if (!ticker) {
+                            alert('Please enter a company ticker');
+                            return;
+                        }
+                        
+                        // Show loading state
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        const originalText = submitBtn.innerHTML;
+                        submitBtn.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Generating...';
+                        submitBtn.disabled = true;
+                        
+                        // Submit form normally (let Flask handle it)
+                        form.submit();
+                    });
+                }
+            });
         </script>
     </body>
     </html>
