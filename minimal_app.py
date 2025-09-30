@@ -15,6 +15,12 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 import io
 import os
+import re
+import threading
+import time
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, asdict
+from enum import Enum
 
 # Create Flask app
 app = Flask(__name__)
@@ -22,6 +28,206 @@ app.secret_key = 'finmodai_secret_key_2024'
 
 # Simple storage for models
 MODEL_STORAGE = {}
+
+# Session Management System
+class ClimateType(str, Enum):
+    BASE = "base"
+    BULL = "bull"
+    BEAR = "bear"
+    ESG = "esg"
+
+class ModelType(str, Enum):
+    THREE_STATEMENT = "three_statement"
+    DCF = "dcf"
+    LBO = "lbo"
+    MERGER = "merger"
+    COMPS = "comps"
+
+@dataclass
+class AssumptionProfile:
+    growth_pct: float
+    ebitda_margin_pct: float
+    tax_rate_pct: float
+    capex_pct: float
+    nwc_pct: float
+
+@dataclass
+class SessionData:
+    session_id: str
+    climate: str
+    ticker: str
+    model: str
+    assumptions: Dict[str, float]
+    created_at: datetime
+    expires_at: datetime
+    ready: bool = True
+
+class SessionManager:
+    def __init__(self, ttl_hours: int = 2):
+        self.sessions: Dict[str, SessionData] = {}
+        self.ttl_hours = ttl_hours
+        self.lock = threading.Lock()
+        
+        # Start cleanup thread
+        self.cleanup_thread = threading.Thread(target=self._cleanup_expired_sessions, daemon=True)
+        self.cleanup_thread.start()
+    
+    def create_session(self, climate: str, ticker: str, model: str) -> SessionData:
+        session_id = str(uuid.uuid4())
+        now = datetime.now()
+        expires_at = now + timedelta(hours=self.ttl_hours)
+        
+        # Get assumption profile based on climate
+        assumptions = self._get_assumption_profile(climate)
+        
+        session_data = SessionData(
+            session_id=session_id,
+            climate=climate,
+            ticker=ticker.upper(),
+            model=model,
+            assumptions=asdict(assumptions),
+            created_at=now,
+            expires_at=expires_at
+        )
+        
+        with self.lock:
+            self.sessions[session_id] = session_data
+        
+        return session_data
+    
+    def get_session(self, session_id: str) -> Optional[SessionData]:
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session and datetime.now() < session.expires_at:
+                return session
+            elif session:
+                # Session expired, remove it
+                del self.sessions[session_id]
+        return None
+    
+    def update_assumptions(self, session_id: str, new_assumptions: Dict[str, float]) -> Optional[SessionData]:
+        with self.lock:
+            session = self.sessions.get(session_id)
+            if session and datetime.now() < session.expires_at:
+                session.assumptions.update(new_assumptions)
+                return session
+        return None
+    
+    def _get_assumption_profile(self, climate: str) -> AssumptionProfile:
+        """Get assumption profile based on climate scenario"""
+        base_profile = AssumptionProfile(
+            growth_pct=0.06,
+            ebitda_margin_pct=0.25,
+            tax_rate_pct=0.21,
+            capex_pct=0.04,
+            nwc_pct=0.10
+        )
+        
+        if climate == ClimateType.BULL:
+            return AssumptionProfile(
+                growth_pct=base_profile.growth_pct + 0.02,  # +200 bps
+                ebitda_margin_pct=base_profile.ebitda_margin_pct + 0.03,  # +300 bps
+                tax_rate_pct=base_profile.tax_rate_pct,
+                capex_pct=base_profile.capex_pct,
+                nwc_pct=base_profile.nwc_pct
+            )
+        elif climate == ClimateType.BEAR:
+            return AssumptionProfile(
+                growth_pct=max(0.01, base_profile.growth_pct - 0.03),  # -300 bps, min 1%
+                ebitda_margin_pct=max(0.05, base_profile.ebitda_margin_pct - 0.02),  # -200 bps, min 5%
+                tax_rate_pct=base_profile.tax_rate_pct,
+                capex_pct=base_profile.capex_pct,
+                nwc_pct=base_profile.nwc_pct
+            )
+        elif climate == ClimateType.ESG:
+            return AssumptionProfile(
+                growth_pct=base_profile.growth_pct,  # Same growth
+                ebitda_margin_pct=base_profile.ebitda_margin_pct - 0.01,  # -100 bps
+                tax_rate_pct=base_profile.tax_rate_pct,
+                capex_pct=base_profile.capex_pct + 0.01,  # +100 bps
+                nwc_pct=base_profile.nwc_pct
+            )
+        else:  # BASE
+            return base_profile
+    
+    def _cleanup_expired_sessions(self):
+        """Background thread to clean up expired sessions"""
+        while True:
+            try:
+                time.sleep(300)  # Check every 5 minutes
+                now = datetime.now()
+                expired_sessions = []
+                
+                with self.lock:
+                    for session_id, session in self.sessions.items():
+                        if now >= session.expires_at:
+                            expired_sessions.append(session_id)
+                    
+                    for session_id in expired_sessions:
+                        del self.sessions[session_id]
+                        print(f"Cleaned up expired session: {session_id}")
+                        
+            except Exception as e:
+                print(f"Error in session cleanup: {e}")
+
+# Initialize session manager
+session_manager = SessionManager()
+
+def validate_ticker(ticker: str) -> tuple[bool, str]:
+    """Validate ticker format"""
+    if not ticker:
+        return False, "Ticker is required"
+    
+    if len(ticker) < 1 or len(ticker) > 15:
+        return False, "Ticker must be 1-15 characters"
+    
+    # Allow A-Z, 0-9, dots, and dashes, must start with letter
+    pattern = r'^[A-Z][A-Z0-9\.\-]{0,14}$'
+    if not re.match(pattern, ticker.upper()):
+        return False, "Ticker must be 1-15 alphanumerics/.-"
+    
+    return True, ""
+
+def lookup_ticker_exists(ticker: str) -> tuple[bool, Optional[str]]:
+    """Stub function to check if ticker exists - returns (exists, warning)"""
+    try:
+        # Quick check using yfinance
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        
+        # If we get basic info, ticker likely exists
+        if info and info.get('symbol') or info.get('shortName'):
+            return True, None
+        else:
+            return True, f"Could not verify ticker {ticker} - proceeding anyway"
+            
+    except Exception:
+        return True, f"Ticker verification offline - proceeding with {ticker}"
+
+def validate_session_request(data: dict) -> tuple[bool, dict]:
+    """Validate session start request"""
+    errors = {}
+    
+    # Validate climate
+    climate = data.get('climate', '').lower()
+    if climate not in [e.value for e in ClimateType]:
+        errors['climate'] = f"Climate must be one of: {[e.value for e in ClimateType]}"
+    
+    # Validate model
+    model = data.get('model', '').lower()
+    if model not in [e.value for e in ModelType]:
+        errors['model'] = f"Model must be one of: {[e.value for e in ModelType]}"
+    
+    # Validate ticker
+    ticker = data.get('ticker', '').strip().upper()
+    if ticker:
+        is_valid, error_msg = validate_ticker(ticker)
+        if not is_valid:
+            errors['ticker'] = error_msg
+    else:
+        errors['ticker'] = "Ticker is required"
+    
+    return len(errors) == 0, errors
 
 class FinancialDataEngine:
     """Real financial data engine using yfinance"""
@@ -1029,6 +1235,164 @@ def get_company_data_api(ticker):
             'error': str(e)
         }), 500
 
+# Session Management API Endpoints
+
+@app.route('/config', methods=['GET'])
+def get_config():
+    """Provide allowed values and defaults for the landing screen"""
+    return jsonify({
+        "climates": [e.value for e in ClimateType],
+        "models": [e.value for e in ModelType],
+        "defaults": {
+            "climate": ClimateType.BASE.value,
+            "model": ModelType.THREE_STATEMENT.value
+        }
+    })
+
+@app.route('/session/start', methods=['POST'])
+def start_session():
+    """Validate selections and create a modeling session"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "error": "validation_error",
+                "fields": {"request": "JSON body required"}
+            }), 400
+        
+        # Validate inputs
+        is_valid, errors = validate_session_request(data)
+        if not is_valid:
+            return jsonify({
+                "error": "validation_error",
+                "fields": errors
+            }), 400
+        
+        # Extract and normalize inputs
+        climate = data['climate'].lower()
+        ticker = data['ticker'].strip().upper()
+        model = data['model'].lower()
+        
+        # Check if ticker exists (optional verification)
+        warnings = []
+        try:
+            exists, warning = lookup_ticker_exists(ticker)
+            if warning:
+                warnings.append(warning)
+        except Exception as e:
+            warnings.append(f"Ticker verification failed: {str(e)}")
+        
+        # Create session
+        session_data = session_manager.create_session(climate, ticker, model)
+        
+        # Log session creation
+        print(f"Created session {session_data.session_id} for {ticker} ({model}, {climate})")
+        
+        return jsonify({
+            "session_id": session_data.session_id,
+            "next_route": "/model",
+            "view": "model",
+            "model": session_data.model,
+            "ticker": session_data.ticker,
+            "climate": session_data.climate,
+            "assumptions": session_data.assumptions,
+            "warnings": warnings
+        }), 201
+        
+    except Exception as e:
+        print(f"Error in start_session: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to create session"
+        }), 500
+
+@app.route('/session/<session_id>', methods=['GET'])
+def get_session(session_id):
+    """Allow the model screen to re-hydrate on refresh"""
+    try:
+        session_data = session_manager.get_session(session_id)
+        
+        if not session_data:
+            return jsonify({
+                "error": "not_found"
+            }), 404
+        
+        return jsonify({
+            "session_id": session_data.session_id,
+            "view": "model",
+            "model": session_data.model,
+            "ticker": session_data.ticker,
+            "climate": session_data.climate,
+            "assumptions": session_data.assumptions,
+            "ready": session_data.ready
+        })
+        
+    except Exception as e:
+        print(f"Error in get_session: {e}")
+        return jsonify({
+            "error": "internal_error"
+        }), 500
+
+@app.route('/assumptions/apply', methods=['POST'])
+def apply_assumptions():
+    """Update assumptions on the model screen"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "error": "validation_error",
+                "fields": {"request": "JSON body required"}
+            }), 400
+        
+        session_id = data.get('session_id')
+        new_assumptions = data.get('assumptions', {})
+        
+        if not session_id:
+            return jsonify({
+                "error": "validation_error",
+                "fields": {"session_id": "Session ID required"}
+            }), 400
+        
+        if not isinstance(new_assumptions, dict):
+            return jsonify({
+                "error": "validation_error",
+                "fields": {"assumptions": "Assumptions must be an object"}
+            }), 400
+        
+        # Validate assumption values are numbers
+        for key, value in new_assumptions.items():
+            if not isinstance(value, (int, float)):
+                return jsonify({
+                    "error": "validation_error",
+                    "fields": {f"assumptions.{key}": "Must be a number"}
+                }), 400
+        
+        # Update session
+        session_data = session_manager.update_assumptions(session_id, new_assumptions)
+        
+        if not session_data:
+            return jsonify({
+                "error": "not_found"
+            }), 404
+        
+        print(f"Updated assumptions for session {session_id}: {new_assumptions}")
+        
+        return jsonify({
+            "session_id": session_data.session_id,
+            "view": "model",
+            "model": session_data.model,
+            "ticker": session_data.ticker,
+            "climate": session_data.climate,
+            "assumptions": session_data.assumptions,
+            "ready": session_data.ready
+        })
+        
+    except Exception as e:
+        print(f"Error in apply_assumptions: {e}")
+        return jsonify({
+            "error": "internal_error"
+        }), 500
+
 @app.route('/download/<filename>')
 def download_file(filename):
     """Download Excel file from temp directory"""
@@ -1118,8 +1482,45 @@ def status():
     return {
         "status": "running",
         "port": os.environ.get('PORT', 'not_set'),
-        "app": "minimal_finmodai"
+        "app": "minimal_finmodai",
+        "active_sessions": len(session_manager.sessions)
     }
+
+@app.route('/test-session-flow', methods=['GET'])
+def test_session_flow():
+    """Test endpoint to demonstrate the complete session flow"""
+    return jsonify({
+        "message": "Session API Test Flow",
+        "steps": [
+            "1. GET /config - Get allowed values",
+            "2. POST /session/start - Create session with climate/ticker/model",
+            "3. GET /session/{session_id} - Retrieve session state",
+            "4. POST /assumptions/apply - Update assumptions (optional)"
+        ],
+        "example_flow": {
+            "step_1": {
+                "method": "GET",
+                "url": "/config",
+                "response": {
+                    "climates": ["base", "bull", "bear", "esg"],
+                    "models": ["three_statement", "dcf", "lbo", "merger", "comps"],
+                    "defaults": {"climate": "base", "model": "three_statement"}
+                }
+            },
+            "step_2": {
+                "method": "POST",
+                "url": "/session/start",
+                "body": {"climate": "bull", "ticker": "AAPL", "model": "dcf"},
+                "response": {
+                    "session_id": "uuid",
+                    "next_route": "/model",
+                    "view": "model",
+                    "assumptions": {"growth_pct": 0.08, "ebitda_margin_pct": 0.28}
+                }
+            }
+        },
+        "current_sessions": len(session_manager.sessions)
+    })
 
 @app.route('/test')
 def test():
