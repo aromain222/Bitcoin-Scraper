@@ -2066,6 +2066,11 @@ def model_results(model_id):
     model = MODEL_STORAGE[model_id]
     result = model['result']
     
+    # Generate the HTML sections
+    download_section_html = generate_download_section(model)
+    assumptions_html = format_assumptions_html(result)
+    valuation_html = generate_valuation_html(result)
+    
     return f'''
     <!DOCTYPE html>
     <html lang="en" class="h-full">
@@ -2151,14 +2156,14 @@ def model_results(model_id):
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h3 class="font-medium text-gray-900 mb-4">Your Excel Model</h3>
                             
-{generate_download_section(model)}
+{download_section_html}
                         </div>
 
                         <!-- Key Assumptions -->
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h3 class="font-medium text-gray-900 mb-4">Key Assumptions</h3>
                             <div class="space-y-3">
-{format_assumptions_html(result)}
+{assumptions_html}
                             </div>
                         </div>
                     </div>
@@ -2171,7 +2176,7 @@ def model_results(model_id):
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h2 class="text-lg font-semibold text-gray-900 mb-6">Valuation Results</h2>
                             
-{generate_valuation_html(result)}
+{valuation_html}
                         </div>
 
                         <!-- Actions -->
