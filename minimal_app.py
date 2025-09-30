@@ -1596,10 +1596,15 @@ def debug_form():
 @app.route('/generate-model', methods=['GET', 'POST'])
 def generate_model():
     if request.method == 'POST':
+        print(f"🔥 POST request received!")
+        print(f"📋 Form data: {dict(request.form)}")
+        
         model_type = request.form.get('model_type', 'dcf')
         ticker = request.form.get('ticker', '').upper()
         use_market_data = request.form.get('use_market_data', 'true') == 'true'
         scenario = request.form.get('scenario', 'base')  # base, bull, bear, or all
+        
+        print(f"📊 Parsed data: model_type={model_type}, ticker={ticker}, use_market_data={use_market_data}, scenario={scenario}")
         
         if not ticker:
             flash('Please enter a ticker symbol', 'error')
@@ -1781,6 +1786,29 @@ def generate_model():
                 <!-- Input Panel -->
                 <div class="col-span-12 lg:col-span-4">
                     <div class="bg-gray-50 rounded-xl p-6 shadow-sm sticky top-8">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <div class="mb-4">
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} mb-3 p-3 rounded-lg border-l-4 
+                                                    {{ 'bg-red-50 border-red-500 text-red-700' if category == 'error' else 'bg-green-50 border-green-500 text-green-700' }}">
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    {% if category == 'error' %}
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    {% else %}
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    {% endif %}
+                                                </svg>
+                                                {{ message }}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        
                         <h2 class="text-lg font-semibold text-gray-900 mb-6">Model Configuration</h2>
                         
                         <form method="POST" class="space-y-6">
