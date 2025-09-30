@@ -590,91 +590,91 @@ class FinancialDataEngine:
             }
         }
     
-        def _calculate_dcf_valuation(self, company_data, assumptions):
-            """Calculate DCF valuation with given assumptions"""
-            try:
-                # Starting revenue (use actual if available, otherwise estimate from market cap)
-                revenue = company_data.get('revenue', 0)
-                print(f"🔍 Initial revenue from company_data: ${revenue:,.0f}")
+    def _calculate_dcf_valuation(self, company_data, assumptions):
+        """Calculate DCF valuation with given assumptions"""
+        try:
+            # Starting revenue (use actual if available, otherwise estimate from market cap)
+            revenue = company_data.get('revenue', 0)
+            print(f"🔍 Initial revenue from company_data: ${revenue:,.0f}")
+            
+            if revenue == 0 and company_data.get('market_cap', 0) > 0:
+                # Estimate revenue from market cap using industry average P/S ratio
+                revenue = company_data['market_cap'] / 3  # Assume 3x P/S ratio
+                print(f"🔍 Estimated revenue from market cap: ${revenue:,.0f}")
+            
+            if revenue == 0:
+                revenue = 1000000000  # Default $1B if no data
+                print(f"🔍 Using default revenue: ${revenue:,.0f}")
+            else:
+                print(f"🔍 Final revenue for DCF: ${revenue:,.0f}")
+            
+            # Project 5 years of cash flows
+            years = 5
+            cash_flows = []
+            
+            for year in range(1, years + 1):
+                growth_rate = assumptions.get(f'revenue_growth_{year}', 0.05)
+                year_revenue = revenue * ((1 + growth_rate) ** year)
                 
-                if revenue == 0 and company_data.get('market_cap', 0) > 0:
-                    # Estimate revenue from market cap using industry average P/S ratio
-                    revenue = company_data['market_cap'] / 3  # Assume 3x P/S ratio
-                    print(f"🔍 Estimated revenue from market cap: ${revenue:,.0f}")
+                operating_income = year_revenue * assumptions['operating_margin']
+                tax = operating_income * assumptions['tax_rate']
+                nopat = operating_income - tax
                 
-                if revenue == 0:
-                    revenue = 1000000000  # Default $1B if no data
-                    print(f"🔍 Using default revenue: ${revenue:,.0f}")
-                else:
-                    print(f"🔍 Final revenue for DCF: ${revenue:,.0f}")
+                capex = year_revenue * assumptions['capex_percent']
+                nwc_change = year_revenue * assumptions['nwc_percent'] * growth_rate
                 
-                # Project 5 years of cash flows
-                years = 5
-                cash_flows = []
-                
-                for year in range(1, years + 1):
-                    growth_rate = assumptions.get(f'revenue_growth_{year}', 0.05)
-                    year_revenue = revenue * ((1 + growth_rate) ** year)
-                    
-                    operating_income = year_revenue * assumptions['operating_margin']
-                    tax = operating_income * assumptions['tax_rate']
-                    nopat = operating_income - tax
-                    
-                    capex = year_revenue * assumptions['capex_percent']
-                    nwc_change = year_revenue * assumptions['nwc_percent'] * growth_rate
-                    
-                    fcf = nopat - capex - nwc_change
-                    cash_flows.append(fcf)
-                
-                # Terminal value
-                terminal_fcf = cash_flows[-1] * (1 + assumptions['terminal_growth'])
-                terminal_value = terminal_fcf / (assumptions['wacc'] - assumptions['terminal_growth'])
-                
-                # Present value calculations
-                pv_cash_flows = []
-                for i, cf in enumerate(cash_flows, 1):
-                    pv = cf / ((1 + assumptions['wacc']) ** i)
-                    pv_cash_flows.append(pv)
-                
-                pv_terminal = terminal_value / ((1 + assumptions['wacc']) ** years)
-                
-                # Enterprise value
-                enterprise_value = sum(pv_cash_flows) + pv_terminal
-                print(f"🔍 DCF Calculation Details:")
-                print(f"   Sum of PV Cash Flows: ${sum(pv_cash_flows):,.0f}")
-                print(f"   PV Terminal Value: ${pv_terminal:,.0f}")
-                print(f"   Enterprise Value: ${enterprise_value:,.0f}")
-                
-                # Equity value (subtract net debt)
-                net_debt = company_data.get('total_debt', 0) - company_data.get('total_cash', 0)
-                equity_value = enterprise_value - net_debt
-                print(f"   Net Debt: ${net_debt:,.0f}")
-                print(f"   Equity Value: ${equity_value:,.0f}")
-                
-                # Per share value
-                shares = company_data.get('shares_outstanding', 0)
-                if shares == 0:
-                    shares = company_data.get('market_cap', 0) / max(company_data.get('current_price', 100), 1)
-                
-                implied_price = equity_value / shares if shares > 0 else 0
-                print(f"   Shares Outstanding: {shares:,.0f}")
-                print(f"   Implied Price: ${implied_price:.2f}")
-                
-                return {
-                    'enterprise_value': float(enterprise_value),
-                    'equity_value': float(equity_value),
-                    'implied_price': float(implied_price),
-                    'current_price': float(company_data.get('current_price', 0)),
-                    'upside_downside': float((implied_price - company_data.get('current_price', 0)) / company_data.get('current_price', 1) * 100) if company_data.get('current_price', 0) > 0 else 0,
-                    'cash_flows': [float(cf) for cf in cash_flows],
-                    'pv_cash_flows': [float(pv) for pv in pv_cash_flows],
-                    'terminal_value': float(terminal_value),
-                    'pv_terminal': float(pv_terminal)
-                }
-                
-            except Exception as e:
-                print(f"Error in DCF calculation: {e}")
-                return None
+                fcf = nopat - capex - nwc_change
+                cash_flows.append(fcf)
+            
+            # Terminal value
+            terminal_fcf = cash_flows[-1] * (1 + assumptions['terminal_growth'])
+            terminal_value = terminal_fcf / (assumptions['wacc'] - assumptions['terminal_growth'])
+            
+            # Present value calculations
+            pv_cash_flows = []
+            for i, cf in enumerate(cash_flows, 1):
+                pv = cf / ((1 + assumptions['wacc']) ** i)
+                pv_cash_flows.append(pv)
+            
+            pv_terminal = terminal_value / ((1 + assumptions['wacc']) ** years)
+            
+            # Enterprise value
+            enterprise_value = sum(pv_cash_flows) + pv_terminal
+            print(f"🔍 DCF Calculation Details:")
+            print(f"   Sum of PV Cash Flows: ${sum(pv_cash_flows):,.0f}")
+            print(f"   PV Terminal Value: ${pv_terminal:,.0f}")
+            print(f"   Enterprise Value: ${enterprise_value:,.0f}")
+            
+            # Equity value (subtract net debt)
+            net_debt = company_data.get('total_debt', 0) - company_data.get('total_cash', 0)
+            equity_value = enterprise_value - net_debt
+            print(f"   Net Debt: ${net_debt:,.0f}")
+            print(f"   Equity Value: ${equity_value:,.0f}")
+            
+            # Per share value
+            shares = company_data.get('shares_outstanding', 0)
+            if shares == 0:
+                shares = company_data.get('market_cap', 0) / max(company_data.get('current_price', 100), 1)
+            
+            implied_price = equity_value / shares if shares > 0 else 0
+            print(f"   Shares Outstanding: {shares:,.0f}")
+            print(f"   Implied Price: ${implied_price:.2f}")
+            
+            return {
+                'enterprise_value': float(enterprise_value),
+                'equity_value': float(equity_value),
+                'implied_price': float(implied_price),
+                'current_price': float(company_data.get('current_price', 0)),
+                'upside_downside': float((implied_price - company_data.get('current_price', 0)) / company_data.get('current_price', 1) * 100) if company_data.get('current_price', 0) > 0 else 0,
+                'cash_flows': [float(cf) for cf in cash_flows],
+                'pv_cash_flows': [float(pv) for pv in pv_cash_flows],
+                'terminal_value': float(terminal_value),
+                'pv_terminal': float(pv_terminal)
+            }
+            
+        except Exception as e:
+            print(f"Error in DCF calculation: {e}")
+            return None
 
 # Initialize the financial data engine
 financial_engine = FinancialDataEngine()
