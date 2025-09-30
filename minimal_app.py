@@ -18,6 +18,9 @@ import os
 import re
 import threading
 import time
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import quote
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
@@ -230,11 +233,21 @@ def validate_session_request(data: dict) -> tuple[bool, dict]:
     return len(errors) == 0, errors
 
 class FinancialDataEngine:
-    """Real financial data engine using yfinance"""
+    """Multi-source financial data engine using yfinance and Google Finance"""
     
     def __init__(self):
         self.cache = {}
         self.cache_expiry = {}
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        })
     
     def get_company_data(self, ticker):
         """Fetch comprehensive company data with robust error handling"""
@@ -335,6 +348,34 @@ class FinancialDataEngine:
                     'ebitda': float(latest_financials.get('EBITDA', 0)) if pd.notna(latest_financials.get('EBITDA')) else 0,
                 })
             
+            # Enhance with Google Finance data
+            google_data = self.get_google_finance_data(ticker)
+            if google_data:
+                print(f"🔗 Merging Google Finance data for {ticker}")
+                # Use Google Finance data to fill gaps or override yfinance data
+                if google_data.get('company_name') and (not data.get('company_name') or data['company_name'] == f"{ticker} Corporation"):
+                    data['company_name'] = google_data['company_name']
+                
+                if google_data.get('current_price') and not data.get('current_price'):
+                    data['current_price'] = google_data['current_price']
+                
+                if google_data.get('market_cap') and not data.get('market_cap'):
+                    data['market_cap'] = google_data['market_cap']
+                
+                if google_data.get('pe_ratio') and not data.get('pe_ratio'):
+                    data['pe_ratio'] = google_data['pe_ratio']
+                
+                # Add Google-specific data
+                if google_data.get('52_week_low'):
+                    data['52_week_low'] = google_data['52_week_low']
+                if google_data.get('52_week_high'):
+                    data['52_week_high'] = google_data['52_week_high']
+                
+                # Add data source info
+                data['data_sources'] = ['yfinance', 'google_finance']
+            else:
+                data['data_sources'] = ['yfinance']
+            
             # Validate we have at least basic data
             if not data.get('company_name') or data['company_name'] == f"{ticker} Corporation":
                 # Try to get a better company name
@@ -347,7 +388,8 @@ class FinancialDataEngine:
             self.cache[cache_key] = data
             self.cache_expiry[cache_key] = datetime.now() + timedelta(minutes=5)
             
-            print(f"✅ Successfully fetched data for {ticker} ({data['company_name']})")
+            sources_str = " + ".join(data.get('data_sources', ['unknown']))
+            print(f"✅ Successfully fetched data for {ticker} ({data['company_name']}) from {sources_str}")
             return data
             
         except Exception as e:
@@ -388,6 +430,104 @@ class FinancialDataEngine:
             }
             print(f"🔄 Using fallback data for {ticker}")
             return fallback_data
+    
+    def get_google_finance_data(self, ticker):
+        """Fetch additional data from Google Finance"""
+        try:
+            print(f"🔍 Fetching Google Finance data for {ticker}")
+            
+            # Google Finance search URL
+            search_url = f"https://www.google.com/finance/quote/{ticker}:NASDAQ"
+            
+            # Try different exchanges if NASDAQ doesn't work
+            exchanges = ['NASDAQ', 'NYSE', 'NYSEARCA']
+            google_data = {}
+            
+            for exchange in exchanges:
+                try:
+                    url = f"https://www.google.com/finance/quote/{ticker}:{exchange}"
+                    response = self.session.get(url, timeout=10)
+                    
+                    if response.status_code == 200:
+                        soup = BeautifulSoup(response.content, 'html.parser')
+                        
+                        # Extract company name
+                        company_name_elem = soup.find('div', {'class': 'zzDege'})
+                        if company_name_elem:
+                            google_data['company_name'] = company_name_elem.text.strip()
+                        
+                        # Extract current price
+                        price_elem = soup.find('div', {'class': 'YMlKec fxKbKc'})
+                        if price_elem:
+                            price_text = price_elem.text.strip().replace('$', '').replace(',', '')
+                            try:
+                                google_data['current_price'] = float(price_text)
+                            except ValueError:
+                                pass
+                        
+                        # Extract market cap
+                        stats_divs = soup.find_all('div', {'class': 'P6K39c'})
+                        for div in stats_divs:
+                            text = div.get_text()
+                            if 'Market cap' in text:
+                                # Extract market cap value
+                                cap_match = re.search(r'Market cap\s*([0-9,.]+[KMBT]?)', text)
+                                if cap_match:
+                                    cap_str = cap_match.group(1)
+                                    google_data['market_cap_str'] = cap_str
+                                    # Convert to number
+                                    google_data['market_cap'] = self._parse_financial_number(cap_str)
+                            elif 'P/E ratio' in text:
+                                pe_match = re.search(r'P/E ratio\s*([0-9,.]+)', text)
+                                if pe_match:
+                                    try:
+                                        google_data['pe_ratio'] = float(pe_match.group(1))
+                                    except ValueError:
+                                        pass
+                        
+                        # Extract 52-week range
+                        range_elem = soup.find('div', string=re.compile('52-week'))
+                        if range_elem:
+                            range_text = range_elem.find_next().text if range_elem.find_next() else ""
+                            range_match = re.search(r'([0-9,.]+)\s*-\s*([0-9,.]+)', range_text)
+                            if range_match:
+                                try:
+                                    google_data['52_week_low'] = float(range_match.group(1).replace(',', ''))
+                                    google_data['52_week_high'] = float(range_match.group(2).replace(',', ''))
+                                except ValueError:
+                                    pass
+                        
+                        if google_data:  # If we got some data, break
+                            print(f"✅ Google Finance data found for {ticker} on {exchange}")
+                            break
+                            
+                except Exception as e:
+                    print(f"⚠️ Google Finance error for {ticker} on {exchange}: {e}")
+                    continue
+            
+            return google_data if google_data else None
+            
+        except Exception as e:
+            print(f"❌ Google Finance complete failure for {ticker}: {e}")
+            return None
+    
+    def _parse_financial_number(self, num_str):
+        """Parse financial numbers like '1.5T', '500B', '10M' to actual numbers"""
+        try:
+            num_str = num_str.replace(',', '').strip()
+            
+            if num_str.endswith('T'):
+                return float(num_str[:-1]) * 1e12
+            elif num_str.endswith('B'):
+                return float(num_str[:-1]) * 1e9
+            elif num_str.endswith('M'):
+                return float(num_str[:-1]) * 1e6
+            elif num_str.endswith('K'):
+                return float(num_str[:-1]) * 1e3
+            else:
+                return float(num_str)
+        except (ValueError, IndexError):
+            return 0
     
     def calculate_dcf_scenarios(self, ticker, base_assumptions=None):
         """Calculate DCF with bull/bear/base scenarios"""
