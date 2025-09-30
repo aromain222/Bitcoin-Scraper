@@ -652,10 +652,13 @@ class FinancialDataEngine:
             print(f"   Equity Value: ${equity_value:,.0f}")
             
             # Per share value
-            shares = company_data.get('shares_outstanding', 0)
+            shares = company_data.get('shares_outstanding', 0) or 0
             if shares == 0:
-                shares = company_data.get('market_cap', 0) / max(company_data.get('current_price', 100), 1)
+                market_cap = company_data.get('market_cap', 0) or 0
+                current_price = company_data.get('current_price', 100) or 100
+                shares = market_cap / max(current_price, 1) if market_cap > 0 else 1000000  # Default 1M shares
             
+            shares = max(shares, 1)  # Ensure shares is at least 1
             implied_price = equity_value / shares if shares > 0 else 0
             print(f"   Shares Outstanding: {shares:,.0f}")
             print(f"   Implied Price: ${implied_price:.2f}")
@@ -665,7 +668,7 @@ class FinancialDataEngine:
                 'equity_value': float(equity_value),
                 'implied_price': float(implied_price),
                 'current_price': float(company_data.get('current_price', 0)),
-                'upside_downside': float((implied_price - company_data.get('current_price', 0)) / company_data.get('current_price', 1) * 100) if company_data.get('current_price', 0) > 0 else 0,
+                'upside_downside': float((implied_price - (company_data.get('current_price') or 0)) / max((company_data.get('current_price') or 1), 1) * 100) if (company_data.get('current_price') or 0) > 0 else 0,
                 'cash_flows': [float(cf) for cf in cash_flows],
                 'pv_cash_flows': [float(pv) for pv in pv_cash_flows],
                 'terminal_value': float(terminal_value),
