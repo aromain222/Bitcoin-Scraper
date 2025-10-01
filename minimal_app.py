@@ -559,24 +559,24 @@ class FinancialDataEngine:
         # Bull Case (more optimistic)
         bull_assumptions = base_assumptions.copy()
         bull_assumptions.update({
-            'revenue_growth_1': base_assumptions['revenue_growth_1'] * 1.5,
-            'revenue_growth_2': base_assumptions['revenue_growth_2'] * 1.4,
-            'revenue_growth_3': base_assumptions['revenue_growth_3'] * 1.3,
-            'operating_margin': min(base_assumptions['operating_margin'] * 1.2, 0.35),
+            'revenue_growth_1': min(base_assumptions['revenue_growth_1'] + 0.02, 0.25),
+            'revenue_growth_2': min(base_assumptions['revenue_growth_2'] + 0.015, 0.20),
+            'revenue_growth_3': min(base_assumptions['revenue_growth_3'] + 0.01, 0.15),
+            'operating_margin': min(base_assumptions['operating_margin'] + 0.02, 0.50),
             'terminal_growth': 0.035,
-            'wacc': max(base_assumptions['wacc'] - 0.01, 0.06)
+            'wacc': max(base_assumptions['wacc'] - 0.015, 0.06)
         })
         scenarios['bull'] = self._calculate_dcf_valuation(company_data, bull_assumptions)
         
         # Bear Case (more conservative)
         bear_assumptions = base_assumptions.copy()
         bear_assumptions.update({
-            'revenue_growth_1': base_assumptions['revenue_growth_1'] * 0.5,
-            'revenue_growth_2': base_assumptions['revenue_growth_2'] * 0.6,
-            'revenue_growth_3': base_assumptions['revenue_growth_3'] * 0.7,
-            'operating_margin': base_assumptions['operating_margin'] * 0.8,
+            'revenue_growth_1': max(base_assumptions['revenue_growth_1'] - 0.03, 0.01),
+            'revenue_growth_2': max(base_assumptions['revenue_growth_2'] - 0.025, 0.01),
+            'revenue_growth_3': max(base_assumptions['revenue_growth_3'] - 0.015, 0.01),
+            'operating_margin': max(base_assumptions['operating_margin'] - 0.03, 0.05),
             'terminal_growth': 0.015,
-            'wacc': base_assumptions['wacc'] + 0.015
+            'wacc': base_assumptions['wacc'] + 0.02
         })
         scenarios['bear'] = self._calculate_dcf_valuation(company_data, bear_assumptions)
         
@@ -752,7 +752,7 @@ class ExcelModelGenerator:
         ws.merge_cells('A2:H2')
         
         # Add clear notation about units
-        ws['A3'] = "📊 All financial figures in USD millions ($M) unless otherwise noted"
+        ws['A3'] = "All financial figures in USD millions ($M) unless otherwise noted"
         ws['A3'].font = Font(bold=True, size=10, color="666666")
         ws['A3'].fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
         ws.merge_cells('A3:H3')
@@ -791,15 +791,15 @@ class ExcelModelGenerator:
         
         # Scenario comparison data
         scenario_data = [
-            ("💰 Enterprise Value ($B)", 
+            ("Enterprise Value ($B)", 
              f"${scenarios.get('bear', {}).get('enterprise_value', 0)/1e9:.1f}B",
              f"${scenarios.get('base', {}).get('enterprise_value', 0)/1e9:.1f}B",
              f"${scenarios.get('bull', {}).get('enterprise_value', 0)/1e9:.1f}B"),
-            ("📈 Implied Price ($)",
+            ("Implied Price ($)",
              f"${scenarios.get('bear', {}).get('implied_price', 0):.2f}",
              f"${scenarios.get('base', {}).get('implied_price', 0):.2f}",
              f"${scenarios.get('bull', {}).get('implied_price', 0):.2f}"),
-            ("📊 Upside/(Downside)",
+            ("Upside/(Downside)",
              f"{scenarios.get('bear', {}).get('upside_downside', 0):+.1f}%",
              f"{scenarios.get('base', {}).get('upside_downside', 0):+.1f}%",
              f"{scenarios.get('bull', {}).get('upside_downside', 0):+.1f}%")
@@ -1158,7 +1158,7 @@ class ExcelModelGenerator:
         ws.merge_cells('A2:G2')
         
         # Add clear notation about units
-        ws['A3'] = "💰 All figures in USD millions ($M) • Growth rates in percentages (%)"
+        ws['A3'] = "All figures in USD millions ($M) • Growth rates in percentages (%)"
         ws['A3'].font = Font(bold=True, size=10, color="666666")
         ws['A3'].fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
         ws.merge_cells('A3:G3')
@@ -1198,13 +1198,13 @@ class ExcelModelGenerator:
         
         # Create detailed financial projection table with clear currency labels
         financial_data = [
-            ("💰 Revenue ($M)", revenue_projections),
-            ("💼 Operating Income ($M)", operating_income),
-            ("🏛️ Taxes ($M)", taxes),
-            ("💵 NOPAT ($M)", nopat),
-            ("🏗️ CapEx ($M)", capex),
-            ("🔄 NWC Change ($M)", nwc_change),
-            ("💸 Free Cash Flow ($M)", fcf)
+            ("Revenue ($M)", revenue_projections),
+            ("Operating Income ($M)", operating_income),
+            ("Taxes ($M)", taxes),
+            ("NOPAT ($M)", nopat),
+            ("CapEx ($M)", capex),
+            ("NWC Change ($M)", nwc_change),
+            ("Free Cash Flow ($M)", fcf)
         ]
         
         for row_idx, (metric, values) in enumerate(financial_data, 6):
@@ -1230,7 +1230,7 @@ class ExcelModelGenerator:
         ws.merge_cells('A2:H2')
         
         # Add clear notation about units
-        ws['A3'] = "💎 Enterprise & Equity Values in USD billions ($B) • Per-share metrics in USD ($)"
+        ws['A3'] = "Enterprise & Equity Values in USD billions ($B) • Per-share metrics in USD ($)"
         ws['A3'].font = Font(bold=True, size=10, color="666666")
         ws['A3'].fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
         ws.merge_cells('A3:H3')
@@ -1266,9 +1266,9 @@ class ExcelModelGenerator:
         
         # Build comprehensive DCF table with clear currency labels
         dcf_data = [
-            ("💸 Free Cash Flow ($M)", cash_flows_m + [terminal_value_m]),
-            ("⏰ Discount Factor", [1/(1+wacc)**i for i in range(1, 6)] + [1/(1+wacc)**5]),
-            ("💎 Present Value ($M)", pv_cash_flows_m + [pv_terminal_m])
+            ("Free Cash Flow ($M)", cash_flows_m + [terminal_value_m]),
+            ("Discount Factor", [1/(1+wacc)**i for i in range(1, 6)] + [1/(1+wacc)**5]),
+            ("Present Value ($M)", pv_cash_flows_m + [pv_terminal_m])
         ]
         
         for row_idx, (metric, values) in enumerate(dcf_data, 7):
@@ -1295,13 +1295,13 @@ class ExcelModelGenerator:
         
         # Create professional summary table
         summary_data = [
-            ("💸 Sum of PV Cash Flows ($B)", f"${sum(pv_cash_flows_m)/1000:.1f}B"),
-            ("⏰ PV of Terminal Value ($B)", f"${pv_terminal_m/1000:.1f}B"),
-            ("💰 Enterprise Value ($B)", f"${enterprise_value:.1f}B"),
-            ("💼 Equity Value ($B)", f"${equity_value:.1f}B"),
-            ("📈 Implied Price per Share", f"${implied_price:.2f}"),
-            ("📊 Current Price per Share", f"${current_price:.2f}"),
-            ("🎯 Upside/(Downside)", f"{upside_downside:+.1f}%")
+            ("Sum of PV Cash Flows ($B)", f"${sum(pv_cash_flows_m)/1000:.1f}B"),
+            ("PV of Terminal Value ($B)", f"${pv_terminal_m/1000:.1f}B"),
+            ("Enterprise Value ($B)", f"${enterprise_value:.1f}B"),
+            ("Equity Value ($B)", f"${equity_value:.1f}B"),
+            ("Implied Price per Share", f"${implied_price:.2f}"),
+            ("Current Price per Share", f"${current_price:.2f}"),
+            ("Upside/(Downside)", f"{upside_downside:+.1f}%")
         ]
         
         for i, (label, value) in enumerate(summary_data, 12):
