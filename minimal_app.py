@@ -823,25 +823,31 @@ class ExcelModelGenerator:
             ws.cell(row=i, column=1, value=label).font = Font(bold=True)
             ws.cell(row=i, column=2, value=value)
         
-        # Company info
-        row = 3
-        ws[f'A{row}'] = "Ticker:"
-        ws[f'B{row}'] = company_data.get('ticker', '')
-        ws[f'A{row}'].font = Font(bold=True)
-        
-        row += 1
-        ws[f'A{row}'] = "Sector:"
-        ws[f'B{row}'] = company_data.get('sector', '')
-        ws[f'A{row}'].font = Font(bold=True)
-        
-        row += 1
-        ws[f'A{row}'] = "Market Cap:"
-        ws[f'B{row}'] = company_data.get('market_cap', 0) / 1e9
-        ws[f'B{row}'].number_format = '"$"#,##0.0"B"'
-        ws[f'A{row}'].font = Font(bold=True)
-        
-        row += 1
-        ws[f'A{row}'] = "Current Price:"
+        # Auto-adjust column widths for executive summary
+        for column in ws.columns:
+            max_length = 0
+            column_letter = None
+            
+            # Find the first non-merged cell to get column letter
+            for cell in column:
+                if hasattr(cell, 'column_letter'):
+                    column_letter = cell.column_letter
+                    break
+            
+            if column_letter:
+                for cell in column:
+                    try:
+                        if hasattr(cell, 'value') and len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 25)
+                ws.column_dimensions[column_letter].width = adjusted_width
+    
+    def _create_financial_projections(self, ws, model_data):
+        """Create detailed 5-year financial projections sheet"""
+        company_data = model_data.get('company_data', {})
+        assumptions = model_data.get('assumptions', {}).get('base', {})
         ws[f'B{row}'] = company_data.get('current_price', 0)
         ws[f'B{row}'].number_format = self.currency_format
         ws[f'A{row}'].font = Font(bold=True)
@@ -2684,6 +2690,8 @@ def generate_model():
                     import traceback
                     traceback.print_exc()
                     excel_filename = None
+                    # Flash error to user
+                    flash(f"Excel generation failed: {str(e)}", 'error')
             
             MODEL_STORAGE[model_id] = {
                 'id': model_id,
