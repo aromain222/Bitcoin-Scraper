@@ -699,33 +699,110 @@ class ExcelModelGenerator:
         )
     
     def generate_dcf_model(self, model_data):
-        """Generate a professional DCF Excel model"""
+        """Generate a comprehensive 3-page DCF Excel model with detailed projections"""
         wb = openpyxl.Workbook()
         
-        # Remove default sheet and create our sheets
+        # Remove default sheet and create comprehensive sheets
         wb.remove(wb.active)
         
-        # Create sheets
+        # Create the 3 main professional sheets
         summary_ws = wb.create_sheet("Executive Summary")
-        dcf_ws = wb.create_sheet("DCF Model")
-        assumptions_ws = wb.create_sheet("Assumptions")
+        projections_ws = wb.create_sheet("Financial Projections") 
+        dcf_ws = wb.create_sheet("DCF Valuation")
         
-        # Generate each sheet
-        self._create_summary_sheet(summary_ws, model_data)
-        self._create_dcf_sheet(dcf_ws, model_data)
-        self._create_assumptions_sheet(assumptions_ws, model_data)
+        # Generate comprehensive sheets with detailed data
+        self._create_executive_summary(summary_ws, model_data)
+        self._create_financial_projections(projections_ws, model_data)
+        self._create_dcf_valuation(dcf_ws, model_data)
         
         return wb
     
-    def _create_summary_sheet(self, ws, model_data):
-        """Create executive summary sheet"""
+    def _create_executive_summary(self, ws, model_data):
+        """Create comprehensive executive summary with scenarios and key metrics"""
         company_data = model_data.get('company_data', {})
         scenarios = model_data.get('scenarios', {})
         
-        # Title
-        ws['A1'] = f"DCF Valuation - {company_data.get('company_name', 'Company')}"
-        ws['A1'].font = Font(bold=True, size=16)
-        ws.merge_cells('A1:F1')
+        # Professional Header
+        ws['A1'] = f"DCF VALUATION ANALYSIS"
+        ws['A1'].font = Font(bold=True, size=18, color="FFFFFF")
+        ws['A1'].fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+        ws.merge_cells('A1:H1')
+        
+        ws['A2'] = f"{company_data.get('company_name', 'Company')} ({company_data.get('ticker', 'N/A')})"
+        ws['A2'].font = Font(bold=True, size=14)
+        ws.merge_cells('A2:H2')
+        
+        # Company Overview Section
+        ws['A4'] = "COMPANY OVERVIEW"
+        ws['A4'].font = Font(bold=True, size=12, color="FFFFFF")
+        ws['A4'].fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        ws.merge_cells('A4:D4')
+        
+        # Company details with better formatting
+        company_info = [
+            ("Ticker Symbol", company_data.get('ticker', 'N/A')),
+            ("Sector", company_data.get('sector', 'N/A')),
+            ("Market Cap", f"${company_data.get('market_cap', 0)/1e9:.1f}B"),
+            ("Current Price", f"${company_data.get('current_price', 0):.2f}"),
+            ("Data Sources", ', '.join(company_data.get('data_sources', ['yfinance'])))
+        ]
+        
+        for i, (label, value) in enumerate(company_info, 5):
+            ws.cell(row=i, column=1, value=label).font = Font(bold=True)
+            ws.cell(row=i, column=2, value=value)
+            
+        # Scenario Comparison Section
+        ws['E4'] = "VALUATION SCENARIOS"
+        ws['E4'].font = Font(bold=True, size=12, color="FFFFFF")
+        ws['E4'].fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        ws.merge_cells('E4:H4')
+        
+        # Scenario headers
+        scenario_headers = ['Metric', 'Bear Case', 'Base Case', 'Bull Case']
+        for col, header in enumerate(scenario_headers, 5):
+            ws.cell(row=5, column=col, value=header)
+            ws.cell(row=5, column=col).font = Font(bold=True)
+            ws.cell(row=5, column=col).fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+        
+        # Scenario comparison data
+        scenario_data = [
+            ("Enterprise Value ($B)", 
+             f"{scenarios.get('bear', {}).get('enterprise_value', 0)/1e9:.1f}",
+             f"{scenarios.get('base', {}).get('enterprise_value', 0)/1e9:.1f}",
+             f"{scenarios.get('bull', {}).get('enterprise_value', 0)/1e9:.1f}"),
+            ("Implied Price ($)",
+             f"{scenarios.get('bear', {}).get('implied_price', 0):.2f}",
+             f"{scenarios.get('base', {}).get('implied_price', 0):.2f}",
+             f"{scenarios.get('bull', {}).get('implied_price', 0):.2f}"),
+            ("Upside/(Downside)",
+             f"{scenarios.get('bear', {}).get('upside_downside', 0):.1f}%",
+             f"{scenarios.get('base', {}).get('upside_downside', 0):.1f}%",
+             f"{scenarios.get('bull', {}).get('upside_downside', 0):.1f}%")
+        ]
+        
+        for row_idx, (metric, bear, base, bull) in enumerate(scenario_data, 6):
+            ws.cell(row=row_idx, column=5, value=metric).font = Font(bold=True)
+            ws.cell(row=row_idx, column=6, value=bear)
+            ws.cell(row=row_idx, column=7, value=base)
+            ws.cell(row=row_idx, column=8, value=bull)
+            
+        # Key Assumptions
+        ws['A11'] = "KEY ASSUMPTIONS"
+        ws['A11'].font = Font(bold=True, size=12, color="FFFFFF")
+        ws['A11'].fill = PatternFill(start_color="C5504B", end_color="C5504B", fill_type="solid")
+        ws.merge_cells('A11:D11')
+        
+        assumptions = model_data.get('assumptions', {}).get('base', {})
+        assumption_data = [
+            ("Revenue Growth (Yr 1)", f"{assumptions.get('revenue_growth_1', 0)*100:.1f}%"),
+            ("Operating Margin", f"{assumptions.get('operating_margin', 0)*100:.1f}%"),
+            ("WACC", f"{assumptions.get('wacc', 0)*100:.1f}%"),
+            ("Terminal Growth", f"{assumptions.get('terminal_growth', 0)*100:.1f}%")
+        ]
+        
+        for i, (label, value) in enumerate(assumption_data, 12):
+            ws.cell(row=i, column=1, value=label).font = Font(bold=True)
+            ws.cell(row=i, column=2, value=value)
         
         # Company info
         row = 3
@@ -1033,6 +1110,160 @@ class ExcelModelGenerator:
                         pass
                 adjusted_width = min(max_length + 2, 25)
                 ws.column_dimensions[column_letter].width = adjusted_width
+    
+    def _create_financial_projections(self, ws, model_data):
+        """Create detailed 5-year financial projections sheet"""
+        company_data = model_data.get('company_data', {})
+        assumptions = model_data.get('assumptions', {}).get('base', {})
+        
+        # Header
+        ws['A1'] = "FINANCIAL PROJECTIONS"
+        ws['A1'].font = Font(bold=True, size=16, color="FFFFFF")
+        ws['A1'].fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+        ws.merge_cells('A1:G1')
+        
+        ws['A2'] = f"{company_data.get('company_name', 'Company')} - 5 Year Forecast ($M)"
+        ws['A2'].font = Font(bold=True, size=12)
+        ws.merge_cells('A2:G2')
+        
+        # Years and headers
+        current_year = 2024
+        years = [current_year + i for i in range(1, 6)]
+        headers = ['Metric'] + [str(year) for year in years]
+        
+        for col, header in enumerate(headers, 1):
+            ws.cell(row=4, column=col, value=header)
+            ws.cell(row=4, column=col).font = Font(bold=True)
+            ws.cell(row=4, column=col).fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+        
+        # Calculate comprehensive projections
+        base_revenue = company_data.get('revenue', 1000000000) / 1e6  # Convert to millions
+        
+        # Build 5-year projections with real assumptions
+        revenue_projections = []
+        for year in range(1, 6):
+            growth_rate = assumptions.get(f'revenue_growth_{year}', 0.05)
+            revenue = base_revenue * ((1 + growth_rate) ** year)
+            revenue_projections.append(revenue)
+        
+        # Calculate all financial statement items
+        operating_margin = assumptions.get('operating_margin', 0.15)
+        tax_rate = assumptions.get('tax_rate', 0.25)
+        capex_rate = assumptions.get('capex_percent', 0.03)
+        nwc_rate = assumptions.get('nwc_percent', 0.02)
+        
+        operating_income = [rev * operating_margin for rev in revenue_projections]
+        taxes = [oi * tax_rate for oi in operating_income]
+        nopat = [oi - tax for oi, tax in zip(operating_income, taxes)]
+        capex = [rev * capex_rate for rev in revenue_projections]
+        nwc_change = [rev * nwc_rate * assumptions.get(f'revenue_growth_{i+1}', 0.05) for i, rev in enumerate(revenue_projections)]
+        fcf = [nopat[i] - capex[i] - nwc_change[i] for i in range(5)]
+        
+        # Create detailed financial projection table
+        financial_data = [
+            ("Revenue", revenue_projections),
+            ("Operating Income", operating_income),
+            ("Taxes", taxes),
+            ("NOPAT", nopat),
+            ("CapEx", capex),
+            ("NWC Change", nwc_change),
+            ("Free Cash Flow", fcf)
+        ]
+        
+        for row_idx, (metric, values) in enumerate(financial_data, 5):
+            ws.cell(row=row_idx, column=1, value=metric).font = Font(bold=True)
+            for col_idx, value in enumerate(values, 2):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                cell.number_format = '"$"#,##0.0'
+    
+    def _create_dcf_valuation(self, ws, model_data):
+        """Create comprehensive DCF valuation sheet with present value analysis"""
+        company_data = model_data.get('company_data', {})
+        base_scenario = model_data.get('scenarios', {}).get('base', {})
+        assumptions = model_data.get('assumptions', {}).get('base', {})
+        
+        # Professional Header
+        ws['A1'] = "DCF VALUATION MODEL"
+        ws['A1'].font = Font(bold=True, size=16, color="FFFFFF")
+        ws['A1'].fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+        ws.merge_cells('A1:H1')
+        
+        ws['A2'] = f"{company_data.get('company_name', 'Company')} - Present Value Analysis"
+        ws['A2'].font = Font(bold=True, size=12)
+        ws.merge_cells('A2:H2')
+        
+        # DCF Calculation Table
+        ws['A4'] = "DISCOUNTED CASH FLOW ANALYSIS"
+        ws['A4'].font = Font(bold=True, size=12, color="FFFFFF")
+        ws['A4'].fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        ws.merge_cells('A4:H4')
+        
+        # Years and headers
+        current_year = 2024
+        years = [current_year + i for i in range(1, 6)]
+        headers = ['Metric'] + [str(year) for year in years] + ['Terminal']
+        
+        for col, header in enumerate(headers, 1):
+            ws.cell(row=5, column=col, value=header)
+            ws.cell(row=5, column=col).font = Font(bold=True)
+            ws.cell(row=5, column=col).fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+        
+        # Extract DCF data from base scenario
+        cash_flows = base_scenario.get('cash_flows', [50000000000] * 5)
+        terminal_value = base_scenario.get('terminal_value', 800000000000)
+        pv_cash_flows = base_scenario.get('pv_cash_flows', [45000000000] * 5)
+        pv_terminal = base_scenario.get('pv_terminal', 400000000000)
+        wacc = assumptions.get('wacc', 0.09)
+        
+        # Convert to millions for better readability
+        cash_flows_m = [cf / 1e6 for cf in cash_flows]
+        terminal_value_m = terminal_value / 1e6
+        pv_cash_flows_m = [pv / 1e6 for pv in pv_cash_flows]
+        pv_terminal_m = pv_terminal / 1e6
+        
+        # Build comprehensive DCF table
+        dcf_data = [
+            ("Free Cash Flow ($M)", cash_flows_m + [terminal_value_m]),
+            ("Discount Factor", [1/(1+wacc)**i for i in range(1, 6)] + [1/(1+wacc)**5]),
+            ("Present Value ($M)", pv_cash_flows_m + [pv_terminal_m])
+        ]
+        
+        for row_idx, (metric, values) in enumerate(dcf_data, 6):
+            ws.cell(row=row_idx, column=1, value=metric).font = Font(bold=True)
+            for col_idx, value in enumerate(values, 2):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                if "Factor" in metric:
+                    cell.number_format = '0.000'
+                else:
+                    cell.number_format = '"$"#,##0.0'
+        
+        # Valuation Summary Section
+        ws['A10'] = "VALUATION SUMMARY"
+        ws['A10'].font = Font(bold=True, size=12, color="FFFFFF")
+        ws['A10'].fill = PatternFill(start_color="C5504B", end_color="C5504B", fill_type="solid")
+        ws.merge_cells('A10:D10')
+        
+        # Extract valuation metrics
+        enterprise_value = base_scenario.get('enterprise_value', 0) / 1e9
+        equity_value = base_scenario.get('equity_value', 0) / 1e9
+        implied_price = base_scenario.get('implied_price', 0)
+        current_price = base_scenario.get('current_price', 0)
+        upside_downside = base_scenario.get('upside_downside', 0)
+        
+        # Create professional summary table
+        summary_data = [
+            ("Sum of PV Cash Flows ($B)", f"{sum(pv_cash_flows_m)/1000:.1f}"),
+            ("PV of Terminal Value ($B)", f"{pv_terminal_m/1000:.1f}"),
+            ("Enterprise Value ($B)", f"{enterprise_value:.1f}"),
+            ("Equity Value ($B)", f"{equity_value:.1f}"),
+            ("Implied Price per Share", f"${implied_price:.2f}"),
+            ("Current Price per Share", f"${current_price:.2f}"),
+            ("Upside/(Downside)", f"{upside_downside:.1f}%")
+        ]
+        
+        for i, (label, value) in enumerate(summary_data, 11):
+            ws.cell(row=i, column=1, value=label).font = Font(bold=True)
+            ws.cell(row=i, column=2, value=value)
 
 # Initialize Excel generator
 excel_generator = ExcelModelGenerator()
