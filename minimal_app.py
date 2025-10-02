@@ -5797,6 +5797,7 @@ def generate_model():
             ai_analysis = None
             ai_assumption_validation = None
             phase2_data = None
+            phase3_data = None
             
             if model_result:
                 try:
@@ -5816,8 +5817,8 @@ def generate_model():
                         print(f"✅ Phase 2 AI analysis generated for {ticker} ({model_type.upper()})")
                         
                         # Extract Phase 2 and Phase 3 data from analysis
-                        phase2_data = ai_analysis.get('phase2_data', {})
-                        phase3_data = ai_analysis.get('phase3_data', {})
+                        phase2_data = ai_analysis.get('phase2_data', {}) if ai_analysis else {}
+                        phase3_data = ai_analysis.get('phase3_data', {}) if ai_analysis else {}
                         
                         # Generate AI assumption validation (primarily for DCF, but can work for others)
                         if assumptions and ('base' in assumptions or 'assumptions' in assumptions):
@@ -5829,6 +5830,11 @@ def generate_model():
                 except Exception as e:
                     print(f"⚠️ Phase 2 AI analysis failed for {ticker}: {e}")
                     # Continue without AI analysis - don't fail the entire model generation
+                    # Ensure variables are set to None if AI analysis fails
+                    ai_analysis = None
+                    ai_assumption_validation = None
+                    phase2_data = None
+                    phase3_data = None
             
             MODEL_STORAGE[model_id] = {
                 'id': model_id,
