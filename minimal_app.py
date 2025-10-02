@@ -3607,22 +3607,22 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         analysis_parts = []
         
         # Company Overview
-        analysis_parts.append(f"**COMPREHENSIVE DCF INVESTMENT ANALYSIS FOR {company_name.upper()}**")
+        analysis_parts.append(f"COMPREHENSIVE DCF INVESTMENT ANALYSIS FOR {company_name.upper()}")
         analysis_parts.append("")
-        analysis_parts.append("**COMPANY OVERVIEW:**")
-        analysis_parts.append(f"- Company: {company_name}")
-        analysis_parts.append(f"- Sector: {sector}")
-        analysis_parts.append(f"- Market Cap: ${market_cap/1e9:.1f}B")
-        analysis_parts.append(f"- Revenue: ${revenue/1e9:.1f}B")
-        analysis_parts.append(f"- Operating Margin: {operating_margin*100:.1f}%")
+        analysis_parts.append("COMPANY OVERVIEW:")
+        analysis_parts.append(f"Company: {company_name}")
+        analysis_parts.append(f"Sector: {sector}")
+        analysis_parts.append(f"Market Cap: ${market_cap/1e9:.1f}B")
+        analysis_parts.append(f"Revenue: ${revenue/1e9:.1f}B")
+        analysis_parts.append(f"Operating Margin: {operating_margin*100:.1f}%")
         analysis_parts.append("")
         
         # Valuation Results
-        analysis_parts.append("**DCF VALUATION RESULTS:**")
-        analysis_parts.append(f"- Enterprise Value: ${enterprise_value/1e9:.1f}B")
-        analysis_parts.append(f"- Implied Price: ${implied_price:.2f}")
-        analysis_parts.append(f"- Current Price: ${current_price:.2f}")
-        analysis_parts.append(f"- Upside/(Downside): {upside_downside:.1f}%")
+        analysis_parts.append("DCF VALUATION RESULTS:")
+        analysis_parts.append(f"Enterprise Value: ${enterprise_value/1e9:.1f}B")
+        analysis_parts.append(f"Implied Price: ${implied_price:.2f}")
+        analysis_parts.append(f"Current Price: ${current_price:.2f}")
+        analysis_parts.append(f"Upside/(Downside): {upside_downside:.1f}%")
         analysis_parts.append("")
         
         # Investment Recommendation
@@ -3647,65 +3647,65 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
             confidence = "High"
             reasoning = "Significantly overvalued with substantial downside risk"
         
-        analysis_parts.append("**INVESTMENT RECOMMENDATION:**")
-        analysis_parts.append(f"- Action: {recommendation}")
-        analysis_parts.append(f"- Confidence: {confidence}")
-        analysis_parts.append(f"- Reasoning: {reasoning}")
+        analysis_parts.append("INVESTMENT RECOMMENDATION:")
+        analysis_parts.append(f"Action: {recommendation}")
+        analysis_parts.append(f"Confidence: {confidence}")
+        analysis_parts.append(f"Reasoning: {reasoning}")
         analysis_parts.append("")
         
         # Key Investment Drivers
-        analysis_parts.append("**KEY INVESTMENT DRIVERS:**")
+        analysis_parts.append("KEY INVESTMENT DRIVERS:")
         if operating_margin > 0.20:
-            analysis_parts.append("- High operational efficiency with strong margins")
+            analysis_parts.append("High operational efficiency with strong margins")
         elif operating_margin < 0.05:
-            analysis_parts.append("- Operational challenges with low margins")
+            analysis_parts.append("Operational challenges with low margins")
         
         if market_cap > 100000000000:  # > $100B
-            analysis_parts.append("- Large-cap stability and institutional appeal")
+            analysis_parts.append("Large-cap stability and institutional appeal")
         elif market_cap < 1000000000:  # < $1B
-            analysis_parts.append("- Small-cap growth potential with higher risk")
+            analysis_parts.append("Small-cap growth potential with higher risk")
         
         if abs(upside_downside) > 15:
-            analysis_parts.append("- Significant valuation gap vs. current price")
+            analysis_parts.append("Significant valuation gap vs. current price")
         
         if sector == 'Technology':
-            analysis_parts.append("- Technology sector growth and innovation potential")
+            analysis_parts.append("Technology sector growth and innovation potential")
         elif sector == 'Healthcare':
-            analysis_parts.append("- Healthcare sector defensive characteristics")
+            analysis_parts.append("Healthcare sector defensive characteristics")
         elif sector == 'Financial Services':
-            analysis_parts.append("- Financial services sector interest rate sensitivity")
+            analysis_parts.append("Financial services sector interest rate sensitivity")
         
         analysis_parts.append("")
         
         # Risk Factors
-        analysis_parts.append("**KEY RISK FACTORS:**")
-        analysis_parts.append("- Market volatility and economic uncertainty")
-        analysis_parts.append("- Competitive pressures and market share loss")
-        analysis_parts.append("- Regulatory changes and compliance costs")
-        analysis_parts.append("- DCF model sensitivity to assumptions")
-        analysis_parts.append("- Terminal value assumptions may be inaccurate")
+        analysis_parts.append("KEY RISK FACTORS:")
+        analysis_parts.append("Market volatility and economic uncertainty")
+        analysis_parts.append("Competitive pressures and market share loss")
+        analysis_parts.append("Regulatory changes and compliance costs")
+        analysis_parts.append("DCF model sensitivity to assumptions")
+        analysis_parts.append("Terminal value assumptions may be inaccurate")
         analysis_parts.append("")
         
         # Specific Recommendations
-        analysis_parts.append("**SPECIFIC INVESTMENT RECOMMENDATIONS:**")
-        analysis_parts.append(f"1. **PRIMARY RECOMMENDATION**: {recommendation} with {confidence.lower()} confidence")
-        analysis_parts.append(f"2. **PRICE TARGET**: ${implied_price:.2f} (DCF implied value)")
-        analysis_parts.append("3. **TIMEFRAME**: Long-term (1-2 years) investment horizon")
-        analysis_parts.append("4. **POSITION SIZING**: 2-5% portfolio allocation recommended")
-        analysis_parts.append("5. **ENTRY STRATEGY**: Consider dollar-cost averaging for volatility")
-        analysis_parts.append("6. **EXIT STRATEGY**: Monitor key operational metrics quarterly")
-        analysis_parts.append("7. **RISK MANAGEMENT**: Set stop-loss at 15-20% below entry")
-        analysis_parts.append("8. **CATALYSTS**: Earnings reports, sector trends, market conditions")
-        analysis_parts.append("9. **MONITORING**: Track revenue growth, margin expansion, market share")
-        analysis_parts.append("10. **ALTERNATIVE STRATEGIES**: Consider options for volatility management")
+        analysis_parts.append("SPECIFIC INVESTMENT RECOMMENDATIONS:")
+        analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+        analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+        analysis_parts.append("3. TIMEFRAME: Long-term (1-2 years) investment horizon")
+        analysis_parts.append("4. POSITION SIZING: 2-5% portfolio allocation recommended")
+        analysis_parts.append("5. ENTRY STRATEGY: Consider dollar-cost averaging for volatility")
+        analysis_parts.append("6. EXIT STRATEGY: Monitor key operational metrics quarterly")
+        analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 15-20% below entry")
+        analysis_parts.append("8. CATALYSTS: Earnings reports, sector trends, market conditions")
+        analysis_parts.append("9. MONITORING: Track revenue growth, margin expansion, market share")
+        analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider options for volatility management")
         analysis_parts.append("")
         
         # Market Context
-        analysis_parts.append("**MARKET CONTEXT:**")
-        analysis_parts.append("- DCF models sensitive to interest rate and growth assumptions")
-        analysis_parts.append("- Current market conditions favor quality companies with strong fundamentals")
-        analysis_parts.append("- Sector rotation and market sentiment impact short-term performance")
-        analysis_parts.append("- Long-term value creation depends on operational execution")
+        analysis_parts.append("MARKET CONTEXT:")
+        analysis_parts.append("DCF models sensitive to interest rate and growth assumptions")
+        analysis_parts.append("Current market conditions favor quality companies with strong fundamentals")
+        analysis_parts.append("Sector rotation and market sentiment impact short-term performance")
+        analysis_parts.append("Long-term value creation depends on operational execution")
         
         analysis = "\n".join(analysis_parts)
         
@@ -3733,23 +3733,23 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         analysis_parts = []
         
         # Company Overview
-        analysis_parts.append(f"**COMPREHENSIVE LBO ANALYSIS FOR {company_name.upper()}**")
+        analysis_parts.append(f"COMPREHENSIVE LBO ANALYSIS FOR {company_name.upper()}")
         analysis_parts.append("")
-        analysis_parts.append("**COMPANY OVERVIEW:**")
-        analysis_parts.append(f"- Company: {company_name}")
-        analysis_parts.append(f"- Sector: {sector}")
-        analysis_parts.append(f"- Market Cap: ${market_cap/1e9:.1f}B")
-        analysis_parts.append(f"- Revenue: ${revenue/1e9:.1f}B")
-        analysis_parts.append(f"- Operating Margin: {operating_margin*100:.1f}%")
-        analysis_parts.append(f"- Current Debt: ${debt_levels/1e9:.1f}B")
+        analysis_parts.append("COMPANY OVERVIEW:")
+        analysis_parts.append(f"Company: {company_name}")
+        analysis_parts.append(f"Sector: {sector}")
+        analysis_parts.append(f"Market Cap: ${market_cap/1e9:.1f}B")
+        analysis_parts.append(f"Revenue: ${revenue/1e9:.1f}B")
+        analysis_parts.append(f"Operating Margin: {operating_margin*100:.1f}%")
+        analysis_parts.append(f"Current Debt: ${debt_levels/1e9:.1f}B")
         analysis_parts.append("")
         
         # LBO Results
-        analysis_parts.append("**LBO MODEL RESULTS:**")
-        analysis_parts.append(f"- Projected IRR: {irr*100:.1f}%")
-        analysis_parts.append(f"- Multiple of Money: {multiple:.1f}x")
-        analysis_parts.append(f"- Debt Capacity: ${debt_capacity/1e9:.1f}B")
-        analysis_parts.append(f"- Exit Value: ${exit_value/1e9:.1f}B")
+        analysis_parts.append("LBO MODEL RESULTS:")
+        analysis_parts.append(f"Projected IRR: {irr*100:.1f}%")
+        analysis_parts.append(f"Multiple of Money: {multiple:.1f}x")
+        analysis_parts.append(f"Debt Capacity: ${debt_capacity/1e9:.1f}B")
+        analysis_parts.append(f"Exit Value: ${exit_value/1e9:.1f}B")
         analysis_parts.append("")
         
         # LBO Recommendation
@@ -3985,98 +3985,98 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         # Generate intelligent response based on question type
         response_parts = []
         
-        response_parts.append(f"**INTELLIGENT ANALYSIS FOR {company_name.upper()} ({ticker})**")
+        response_parts.append(f"INTELLIGENT ANALYSIS FOR {company_name.upper()} ({ticker})")
         response_parts.append("")
-        response_parts.append(f"**Your Question:** \"{user_question}\"")
+        response_parts.append(f"Your Question: \"{user_question}\"")
         response_parts.append("")
         
         # Analyze question type and provide relevant insights
         question_lower = user_question.lower()
         
         if any(word in question_lower for word in ['buy', 'sell', 'invest', 'recommendation']):
-            response_parts.append("**INVESTMENT RECOMMENDATION ANALYSIS:**")
+            response_parts.append("INVESTMENT RECOMMENDATION ANALYSIS:")
             if model_type.lower() == 'dcf':
-                response_parts.append("- DCF models provide intrinsic value based on cash flow projections")
-                response_parts.append("- Compare implied price to current market price for investment decision")
-                response_parts.append("- Consider upside/downside potential and risk factors")
+                response_parts.append("DCF models provide intrinsic value based on cash flow projections")
+                response_parts.append("Compare implied price to current market price for investment decision")
+                response_parts.append("Consider upside/downside potential and risk factors")
             elif model_type.lower() == 'lbo':
-                response_parts.append("- LBO models assess private equity acquisition potential")
-                response_parts.append("- Focus on IRR, multiple, and debt capacity metrics")
-                response_parts.append("- Evaluate operational improvement opportunities")
+                response_parts.append("LBO models assess private equity acquisition potential")
+                response_parts.append("Focus on IRR, multiple, and debt capacity metrics")
+                response_parts.append("Evaluate operational improvement opportunities")
             response_parts.append("")
         
         if any(word in question_lower for word in ['risk', 'risky', 'danger', 'concern']):
-            response_parts.append("**RISK ASSESSMENT:**")
-            response_parts.append("- Market volatility and economic uncertainty")
-            response_parts.append("- Model sensitivity to key assumptions")
-            response_parts.append("- Competitive pressures and sector headwinds")
-            response_parts.append("- Regulatory and compliance risks")
+            response_parts.append("RISK ASSESSMENT:")
+            response_parts.append("Market volatility and economic uncertainty")
+            response_parts.append("Model sensitivity to key assumptions")
+            response_parts.append("Competitive pressures and sector headwinds")
+            response_parts.append("Regulatory and compliance risks")
             response_parts.append("")
         
         if any(word in question_lower for word in ['assumption', 'assume', 'input', 'parameter']):
-            response_parts.append("**KEY ASSUMPTIONS ANALYSIS:**")
+            response_parts.append("KEY ASSUMPTIONS ANALYSIS:")
             if model_type.lower() == 'dcf':
-                response_parts.append("- Revenue growth rates and terminal growth")
-                response_parts.append("- Operating margins and cost structure")
-                response_parts.append("- WACC and discount rate assumptions")
-                response_parts.append("- Terminal value methodology")
+                response_parts.append("Revenue growth rates and terminal growth")
+                response_parts.append("Operating margins and cost structure")
+                response_parts.append("WACC and discount rate assumptions")
+                response_parts.append("Terminal value methodology")
             elif model_type.lower() == 'lbo':
-                response_parts.append("- Revenue growth and margin expansion")
-                response_parts.append("- Debt capacity and leverage assumptions")
-                response_parts.append("- Exit multiple and timing assumptions")
-                response_parts.append("- Operational improvement targets")
+                response_parts.append("Revenue growth and margin expansion")
+                response_parts.append("Debt capacity and leverage assumptions")
+                response_parts.append("Exit multiple and timing assumptions")
+                response_parts.append("Operational improvement targets")
             response_parts.append("")
         
         if any(word in question_lower for word in ['scenario', 'bull', 'bear', 'case']):
-            response_parts.append("**SCENARIO ANALYSIS:**")
-            response_parts.append("- Bull Case: Optimistic assumptions with upside potential")
-            response_parts.append("- Base Case: Most likely scenario with reasonable assumptions")
-            response_parts.append("- Bear Case: Conservative assumptions with downside protection")
-            response_parts.append("- Consider probability weighting of different scenarios")
+            response_parts.append("SCENARIO ANALYSIS:")
+            response_parts.append("Bull Case: Optimistic assumptions with upside potential")
+            response_parts.append("Base Case: Most likely scenario with reasonable assumptions")
+            response_parts.append("Bear Case: Conservative assumptions with downside protection")
+            response_parts.append("Consider probability weighting of different scenarios")
             response_parts.append("")
         
         if any(word in question_lower for word in ['compare', 'peer', 'competitor', 'relative']):
-            response_parts.append("**COMPARATIVE ANALYSIS:**")
-            response_parts.append("- Compare valuation multiples to sector peers")
-            response_parts.append("- Assess relative operational performance")
-            response_parts.append("- Evaluate competitive positioning and market share")
-            response_parts.append("- Consider sector-specific trends and dynamics")
+            response_parts.append("COMPARATIVE ANALYSIS:")
+            response_parts.append("Compare valuation multiples to sector peers")
+            response_parts.append("Assess relative operational performance")
+            response_parts.append("Evaluate competitive positioning and market share")
+            response_parts.append("Consider sector-specific trends and dynamics")
             response_parts.append("")
         
         # Add general guidance
-        response_parts.append("**SPECIFIC GUIDANCE FOR YOUR QUESTION:**")
-        response_parts.append("- Review the detailed model results and assumptions")
-        response_parts.append("- Consider the sensitivity of results to key variables")
-        response_parts.append("- Evaluate market conditions and sector trends")
-        response_parts.append("- Assess management execution and competitive positioning")
-        response_parts.append("- Monitor key operational and financial metrics")
+        response_parts.append("SPECIFIC GUIDANCE FOR YOUR QUESTION:")
+        response_parts.append("Review the detailed model results and assumptions")
+        response_parts.append("Consider the sensitivity of results to key variables")
+        response_parts.append("Evaluate market conditions and sector trends")
+        response_parts.append("Assess management execution and competitive positioning")
+        response_parts.append("Monitor key operational and financial metrics")
         response_parts.append("")
         
         # Add model-specific insights
         if model_type.lower() == 'dcf':
-            response_parts.append("**DCF-SPECIFIC INSIGHTS:**")
-            response_parts.append("- Focus on cash flow generation and growth sustainability")
-            response_parts.append("- Evaluate terminal value assumptions and exit multiples")
-            response_parts.append("- Consider WACC sensitivity and discount rate rationale")
-            response_parts.append("- Assess revenue growth assumptions vs. historical performance")
+            response_parts.append("DCF-SPECIFIC INSIGHTS:")
+            response_parts.append("Focus on cash flow generation and growth sustainability")
+            response_parts.append("Evaluate terminal value assumptions and exit multiples")
+            response_parts.append("Consider WACC sensitivity and discount rate rationale")
+            response_parts.append("Assess revenue growth assumptions vs. historical performance")
         elif model_type.lower() == 'lbo':
-            response_parts.append("**LBO-SPECIFIC INSIGHTS:**")
-            response_parts.append("- Evaluate debt capacity and leverage optimization")
-            response_parts.append("- Assess operational improvement potential and execution risk")
-            response_parts.append("- Consider exit strategy and multiple expansion opportunities")
-            response_parts.append("- Focus on cash flow generation for debt service")
+            response_parts.append("LBO-SPECIFIC INSIGHTS:")
+            response_parts.append("Evaluate debt capacity and leverage optimization")
+            response_parts.append("Assess operational improvement potential and execution risk")
+            response_parts.append("Consider exit strategy and multiple expansion opportunities")
+            response_parts.append("Focus on cash flow generation for debt service")
         elif model_type.lower() == 'ma':
-            response_parts.append("**M&A-SPECIFIC INSIGHTS:**")
-            response_parts.append("- Evaluate strategic rationale and synergy potential")
-            response_parts.append("- Assess accretion/dilution impact and integration challenges")
-            response_parts.append("- Consider regulatory approval and competitive dynamics")
-            response_parts.append("- Focus on cultural fit and management alignment")
+            response_parts.append("M&A-SPECIFIC INSIGHTS:")
+            response_parts.append("Evaluate strategic rationale and synergy potential")
+            response_parts.append("Assess accretion/dilution impact and integration challenges")
+            response_parts.append("Consider regulatory approval and competitive dynamics")
+            response_parts.append("Focus on cultural fit and management alignment")
         elif model_type.lower() == 'comps':
-            response_parts.append("**TRADING COMPS INSIGHTS:**")
-            response_parts.append("- Compare valuation multiples to sector peers")
-            response_parts.append("- Assess relative operational performance and growth")
-            response_parts.append("- Evaluate premium/discount to peer group")
-            response_parts.append("- Consider market positioning and competitive advantages")
+            response_parts.append("TRADING COMPS INSIGHTS:")
+            response_parts.append("Compare valuation multiples to sector peers")
+            response_parts.append("Assess relative operational performance and growth")
+            response_parts.append("Evaluate premium/discount to peer group")
+            response_parts.append("Consider market positioning and competitive advantages")
         
         response_parts.append("")
         response_parts.append("*Note: This is an enhanced analysis based on your question and model data. For AI-powered insights, the AI service is currently unavailable.*")
