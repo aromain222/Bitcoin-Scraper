@@ -307,6 +307,9 @@ class FinancialDataEngine:
             except Exception as e:
                 print(f"⚠️ Cash flow fetch failed for {ticker}: {e}")
             
+            # Calculate historical metrics for better assumptions
+            historical_metrics = self._calculate_historical_metrics(stock, info)
+            
             # Calculate key metrics
             data = {
                 'ticker': ticker,
@@ -336,6 +339,9 @@ class FinancialDataEngine:
                 'dividend_yield': info.get('dividendYield', 0),
                 'payout_ratio': info.get('payoutRatio', 0)
             }
+            
+            # Add historical metrics for DCF assumptions
+            data.update(historical_metrics)
             
             # Add historical financial data if available
             if not financials.empty:
@@ -529,26 +535,130 @@ class FinancialDataEngine:
         except (ValueError, IndexError):
             return 0
     
+    def _calculate_historical_metrics(self, stock, info):
+        """Calculate historical growth rates and financial metrics based on company data"""
+        try:
+            print(f"📊 Calculating historical metrics...")
+            
+            # Initialize metrics with defaults
+            metrics = {
+                'historical_revenue_growth': 0.08,  # Default 8%
+                'historical_operating_margin': 0.15,  # Default 15%
+                'historical_tax_rate': 0.25,  # Default 25%
+                'sector_wacc': 0.10,  # Default 10%
+                'beta': info.get('beta', 1.0)
+            }
+            
+            # Get historical data for revenue growth calculation
+            try:
+                hist_data = stock.history(period="5y")
+                if not hist_data.empty and len(hist_data) > 252:  # At least 1 year of data
+                    # Use price appreciation as a proxy for growth when financials aren't available
+                    start_price = hist_data['Close'].iloc[0]
+                    end_price = hist_data['Close'].iloc[-1]
+                    years = len(hist_data) / 252  # Approximate years
+                    
+                    if start_price > 0 and years > 1:
+                        price_cagr = (end_price / start_price) ** (1/years) - 1
+                        # Use price CAGR as a proxy for revenue growth, but cap it reasonably
+                        if 0 <= price_cagr <= 0.3:  # Cap at 30%
+                            metrics['historical_revenue_growth'] = min(price_cagr * 0.7, 0.25)  # Scale down and cap
+                            print(f"📈 Estimated revenue growth from price history: {metrics['historical_revenue_growth']*100:.1f}%")
+            except Exception as e:
+                print(f"⚠️ Historical data analysis failed: {e}")
+            
+            # Use current operating margin if available
+            operating_margin = info.get('operatingMargins')
+            if operating_margin and 0 <= operating_margin <= 1:
+                metrics['historical_operating_margin'] = operating_margin
+                print(f"📊 Current operating margin: {operating_margin*100:.1f}%")
+            
+            # Calculate sector-based WACC
+            sector = info.get('sector', 'Technology')
+            beta = info.get('beta', 1.0)
+            
+            # Sector-based risk premiums and typical margins
+            sector_data = {
+                'Technology': {'risk_premium': 0.06, 'typical_margin': 0.25, 'tax_rate': 0.23},
+                'Healthcare': {'risk_premium': 0.07, 'typical_margin': 0.18, 'tax_rate': 0.22},
+                'Financial Services': {'risk_premium': 0.08, 'typical_margin': 0.30, 'tax_rate': 0.25},
+                'Consumer Cyclical': {'risk_premium': 0.08, 'typical_margin': 0.12, 'tax_rate': 0.24},
+                'Communication Services': {'risk_premium': 0.07, 'typical_margin': 0.20, 'tax_rate': 0.23},
+                'Industrials': {'risk_premium': 0.08, 'typical_margin': 0.15, 'tax_rate': 0.25},
+                'Consumer Defensive': {'risk_premium': 0.06, 'typical_margin': 0.08, 'tax_rate': 0.24},
+                'Energy': {'risk_premium': 0.10, 'typical_margin': 0.12, 'tax_rate': 0.28},
+                'Utilities': {'risk_premium': 0.05, 'typical_margin': 0.15, 'tax_rate': 0.26},
+                'Real Estate': {'risk_premium': 0.07, 'typical_margin': 0.35, 'tax_rate': 0.20},
+                'Materials': {'risk_premium': 0.09, 'typical_margin': 0.12, 'tax_rate': 0.26},
+                'Basic Materials': {'risk_premium': 0.09, 'typical_margin': 0.12, 'tax_rate': 0.26}
+            }
+            
+            sector_info = sector_data.get(sector, sector_data['Technology'])
+            
+            # If no operating margin from company data, use sector typical
+            if metrics['historical_operating_margin'] == 0.15:  # Still default
+                metrics['historical_operating_margin'] = sector_info['typical_margin']
+                print(f"📊 Using sector typical operating margin: {metrics['historical_operating_margin']*100:.1f}%")
+            
+            # Use sector typical tax rate
+            metrics['historical_tax_rate'] = sector_info['tax_rate']
+            print(f"🏛️ Sector typical tax rate: {metrics['historical_tax_rate']*100:.1f}%")
+            
+            # Calculate WACC
+            risk_free_rate = 0.045  # Approximate 10-year treasury
+            market_risk_premium = 0.06  # Historical equity risk premium
+            sector_premium = sector_info['risk_premium']
+            
+            # WACC = Risk-free rate + Beta * Market risk premium + Sector adjustment
+            wacc = risk_free_rate + beta * market_risk_premium + (sector_premium - 0.06)
+            metrics['sector_wacc'] = max(0.06, min(0.15, wacc))  # Bound between 6% and 15%
+            
+            print(f"💰 Calculated WACC (Sector: {sector}): {metrics['sector_wacc']*100:.1f}%")
+            
+            return metrics
+            
+        except Exception as e:
+            print(f"⚠️ Historical metrics calculation failed: {e}")
+            return {
+                'historical_revenue_growth': 0.08,
+                'historical_operating_margin': 0.15,
+                'historical_tax_rate': 0.25,
+                'sector_wacc': 0.10,
+                'beta': 1.0
+            }
+    
     def calculate_dcf_scenarios(self, ticker, base_assumptions=None):
         """Calculate DCF with bull/bear/base scenarios"""
         company_data = self.get_company_data(ticker)
         if not company_data:
             return None
         
-        # Base case assumptions (can be overridden)
+        # Base case assumptions using historical data and sector benchmarks
         if base_assumptions is None:
+            # Use historical metrics if available
+            hist_revenue_growth = company_data.get('historical_revenue_growth', 0.08)
+            hist_operating_margin = company_data.get('historical_operating_margin', 0.15)
+            hist_tax_rate = company_data.get('historical_tax_rate', 0.25)
+            sector_wacc = company_data.get('sector_wacc', 0.10)
+            
+            print(f"📊 Using historical assumptions:")
+            print(f"   Revenue Growth: {hist_revenue_growth*100:.1f}%")
+            print(f"   Operating Margin: {hist_operating_margin*100:.1f}%")
+            print(f"   Tax Rate: {hist_tax_rate*100:.1f}%")
+            print(f"   WACC: {sector_wacc*100:.1f}%")
+            
             base_assumptions = {
-                'revenue_growth_1': max(company_data.get('revenue_growth', 0.1), 0.05),
-                'revenue_growth_2': max(company_data.get('revenue_growth', 0.08) * 0.8, 0.03),
-                'revenue_growth_3': max(company_data.get('revenue_growth', 0.06) * 0.6, 0.025),
+                'revenue_growth_1': hist_revenue_growth,
+                'revenue_growth_2': max(hist_revenue_growth * 0.8, 0.03),
+                'revenue_growth_3': max(hist_revenue_growth * 0.6, 0.025),
                 'revenue_growth_4': 0.025,
                 'revenue_growth_5': 0.025,
-                'operating_margin': max(company_data.get('operating_margin', 0.15), 0.1),
-                'tax_rate': 0.25,
+                'operating_margin': hist_operating_margin,
+                'tax_rate': hist_tax_rate,
                 'capex_percent': 0.03,
                 'nwc_percent': 0.02,
                 'terminal_growth': 0.025,
-                'wacc': max(0.08, 0.05 + (company_data.get('beta', 1.0) * 0.06))
+                'wacc': sector_wacc
             }
         
         scenarios = {}
