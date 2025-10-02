@@ -2108,29 +2108,111 @@ class FinancialAIAgent:
         except Exception as e:
             print(f"⚠️ AI client initialization failed: {e}")
     
-    def analyze_dcf_model(self, company_data, dcf_results, scenarios=None):
-        """Generate AI analysis of DCF model results"""
+    def analyze_model(self, model_type, company_data, model_results, scenarios=None, assumptions=None):
+        """Generate comprehensive AI analysis for any model type"""
         try:
             if not self.claude_client:
-                return self._fallback_analysis(company_data, dcf_results)
+                return self._fallback_model_analysis(model_type, company_data, model_results)
             
-            prompt = self._build_dcf_analysis_prompt(company_data, dcf_results, scenarios)
-            
-            response = self.claude_client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=1500,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            
-            return {
-                'analysis': response.content[0].text,
-                'source': 'claude',
-                'timestamp': datetime.now().isoformat()
-            }
+            # Route to specific analysis method based on model type
+            if model_type.lower() == 'dcf':
+                return self._analyze_dcf_model(company_data, model_results, scenarios, assumptions)
+            elif model_type.lower() == 'lbo':
+                return self._analyze_lbo_model(company_data, model_results, scenarios, assumptions)
+            elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
+                return self._analyze_ma_model(company_data, model_results, scenarios, assumptions)
+            elif model_type.lower() == 'comps':
+                return self._analyze_comps_model(company_data, model_results, scenarios, assumptions)
+            else:
+                return self._analyze_generic_model(model_type, company_data, model_results, scenarios, assumptions)
             
         except Exception as e:
             print(f"❌ AI analysis failed: {e}")
-            return self._fallback_analysis(company_data, dcf_results)
+            return self._fallback_model_analysis(model_type, company_data, model_results)
+    
+    def analyze_dcf_model(self, company_data, dcf_results, scenarios=None):
+        """Generate AI analysis of DCF model results - legacy method"""
+        return self.analyze_model('dcf', company_data, dcf_results, scenarios)
+    
+    def _analyze_dcf_model(self, company_data, dcf_results, scenarios=None, assumptions=None):
+        """Generate comprehensive DCF analysis"""
+        prompt = self._build_dcf_analysis_prompt(company_data, dcf_results, scenarios)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _analyze_lbo_model(self, company_data, lbo_results, scenarios=None, assumptions=None):
+        """Generate comprehensive LBO analysis"""
+        prompt = self._build_lbo_analysis_prompt(company_data, lbo_results, scenarios, assumptions)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _analyze_ma_model(self, company_data, ma_results, scenarios=None, assumptions=None):
+        """Generate comprehensive M&A analysis"""
+        prompt = self._build_ma_analysis_prompt(company_data, ma_results, scenarios, assumptions)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _analyze_comps_model(self, company_data, comps_results, scenarios=None, assumptions=None):
+        """Generate comprehensive Trading Comps analysis"""
+        prompt = self._build_comps_analysis_prompt(company_data, comps_results, scenarios, assumptions)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _analyze_generic_model(self, model_type, company_data, model_results, scenarios=None, assumptions=None):
+        """Generate analysis for any other model type"""
+        prompt = self._build_generic_analysis_prompt(model_type, company_data, model_results, scenarios, assumptions)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat()
+        }
     
     def validate_assumptions(self, company_data, assumptions):
         """AI validation of DCF assumptions against historical data"""
@@ -2160,7 +2242,7 @@ class FinancialAIAgent:
         """Interactive Q&A about the financial model"""
         try:
             if not self.claude_client:
-                return self._fallback_chat_response(user_question)
+                return self._fallback_chat_response(user_question, model_context)
             
             prompt = self._build_chat_prompt(user_question, model_context)
             
@@ -2178,7 +2260,7 @@ class FinancialAIAgent:
             
         except Exception as e:
             print(f"❌ AI chat failed: {e}")
-            return self._fallback_chat_response(user_question)
+            return self._fallback_chat_response(user_question, model_context)
     
     def _build_dcf_analysis_prompt(self, company_data, dcf_results, scenarios=None):
         """Build comprehensive DCF analysis prompt"""
@@ -2231,6 +2313,191 @@ Format your response professionally for an investment committee.
         
         return prompt
     
+    def _build_lbo_analysis_prompt(self, company_data, lbo_results, scenarios=None, assumptions=None):
+        """Build comprehensive LBO analysis prompt"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        debt_levels = company_data.get('total_debt', 0)
+        
+        # Extract LBO-specific metrics
+        irr = lbo_results.get('irr', 0)
+        multiple = lbo_results.get('multiple', 0)
+        debt_capacity = lbo_results.get('debt_capacity', 0)
+        exit_value = lbo_results.get('exit_value', 0)
+        
+        prompt = f"""
+As a senior private equity analyst, provide a comprehensive LBO analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+- Current Debt: ${debt_levels/1e9:.1f}B
+
+LBO MODEL RESULTS:
+- Projected IRR: {irr*100:.1f}%
+- Multiple of Money: {multiple:.1f}x
+- Debt Capacity: ${debt_capacity/1e9:.1f}B
+- Exit Value: ${exit_value/1e9:.1f}B
+
+Please provide:
+1. **LBO Attractiveness Assessment**: Is this a good LBO target? Why or why not?
+2. **Financial Profile Analysis**: Debt capacity, cash flow generation, margin expansion potential
+3. **Operational Improvements**: Cost reduction opportunities, revenue growth levers
+4. **Risk Factors**: Key risks to the LBO thesis and exit strategy
+5. **Investment Recommendation**: Proceed/Pass with detailed reasoning
+6. **Value Creation Strategy**: Specific actions to drive returns
+
+Focus on private equity investment criteria and LBO-specific considerations.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_irr = scenario_data.get('irr', 0)
+                scenario_multiple = scenario_data.get('multiple', 0)
+                prompt += f"- {scenario_name.upper()}: IRR={scenario_irr*100:.1f}%, Multiple={scenario_multiple:.1f}x\n"
+        
+        return prompt
+    
+    def _build_ma_analysis_prompt(self, company_data, ma_results, scenarios=None, assumptions=None):
+        """Build comprehensive M&A analysis prompt"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        # Extract M&A-specific metrics
+        accretion_dilution = ma_results.get('accretion_dilution', 0)
+        synergy_value = ma_results.get('synergy_value', 0)
+        purchase_price = ma_results.get('purchase_price', 0)
+        combined_value = ma_results.get('combined_value', 0)
+        
+        prompt = f"""
+As a senior M&A investment banker, provide a comprehensive merger analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+M&A MODEL RESULTS:
+- Accretion/(Dilution): {accretion_dilution*100:.1f}%
+- Synergy Value: ${synergy_value/1e9:.1f}B
+- Purchase Price: ${purchase_price/1e9:.1f}B
+- Combined Enterprise Value: ${combined_value/1e9:.1f}B
+
+Please provide:
+1. **Strategic Rationale**: Why does this merger make strategic sense?
+2. **Synergy Analysis**: Revenue synergies, cost synergies, and implementation risks
+3. **Financial Impact**: Accretion/dilution analysis and EPS impact
+4. **Integration Challenges**: Key risks and challenges in combining operations
+5. **Market Reaction**: Expected investor response and trading implications
+6. **Deal Recommendation**: Proceed/Pass with detailed reasoning
+7. **Value Creation**: How this merger creates shareholder value
+
+Focus on strategic fit, financial impact, and execution risks.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_accretion = scenario_data.get('accretion_dilution', 0)
+                scenario_synergy = scenario_data.get('synergy_value', 0)
+                prompt += f"- {scenario_name.upper()}: Accretion={scenario_accretion*100:.1f}%, Synergies=${scenario_synergy/1e9:.1f}B\n"
+        
+        return prompt
+    
+    def _build_comps_analysis_prompt(self, company_data, comps_results, scenarios=None, assumptions=None):
+        """Build comprehensive Trading Comps analysis prompt"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        # Extract Comps-specific metrics
+        ev_revenue = comps_results.get('ev_revenue', 0)
+        ev_ebitda = comps_results.get('ev_ebitda', 0)
+        pe_ratio = comps_results.get('pe_ratio', 0)
+        pb_ratio = comps_results.get('pb_ratio', 0)
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive trading comparables analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+TRADING COMPARABLES RESULTS:
+- EV/Revenue Multiple: {ev_revenue:.1f}x
+- EV/EBITDA Multiple: {ev_ebitda:.1f}x
+- P/E Ratio: {pe_ratio:.1f}x
+- P/B Ratio: {pb_ratio:.1f}x
+
+Please provide:
+1. **Valuation Assessment**: Is the company trading at fair value vs. peers?
+2. **Peer Comparison**: How does it compare to sector averages and key competitors?
+3. **Multiple Analysis**: Which multiples are most relevant and why?
+4. **Growth vs. Value**: Is this a growth or value play relative to peers?
+5. **Investment Thesis**: Buy/Hold/Sell recommendation with peer-based reasoning
+6. **Key Differentiators**: What makes this company unique vs. peers?
+7. **Risk Factors**: Peer-specific risks and sector headwinds
+
+Focus on relative valuation and peer comparison insights.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_ev_rev = scenario_data.get('ev_revenue', 0)
+                scenario_pe = scenario_data.get('pe_ratio', 0)
+                prompt += f"- {scenario_name.upper()}: EV/Rev={scenario_ev_rev:.1f}x, P/E={scenario_pe:.1f}x\n"
+        
+        return prompt
+    
+    def _build_generic_analysis_prompt(self, model_type, company_data, model_results, scenarios=None, assumptions=None):
+        """Build analysis prompt for any other model type"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        
+        prompt = f"""
+As a senior financial analyst, provide a comprehensive analysis for {company_name} based on this {model_type.upper()} model:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+
+MODEL RESULTS:
+{json.dumps(model_results, indent=2)}
+
+Please provide:
+1. **Model Assessment**: Key insights from the {model_type.upper()} analysis
+2. **Investment Implications**: What this means for investment decisions
+3. **Risk Factors**: Key risks and considerations
+4. **Recommendation**: Investment recommendation with reasoning
+5. **Next Steps**: Suggested follow-up analysis or actions
+
+Focus on practical investment insights and actionable recommendations.
+"""
+        
+        return prompt
+    
     def _build_assumption_validation_prompt(self, company_data, assumptions):
         """Build assumption validation prompt"""
         company_name = company_data.get('company_name', 'Unknown')
@@ -2272,20 +2539,61 @@ Be specific and reference industry benchmarks where applicable.
     
     def _build_chat_prompt(self, user_question, model_context):
         """Build chat prompt for model Q&A"""
+        model_type = model_context.get('model_type', 'unknown')
+        company_name = model_context.get('company_name', 'Unknown')
+        
+        # Add model-specific context
+        if model_type.lower() == 'dcf':
+            analyst_role = "equity research analyst"
+            focus_area = "DCF valuation, investment thesis, and price targets"
+        elif model_type.lower() == 'lbo':
+            analyst_role = "private equity analyst"
+            focus_area = "LBO attractiveness, debt capacity, and operational improvements"
+        elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
+            analyst_role = "M&A investment banker"
+            focus_area = "strategic rationale, synergies, and integration challenges"
+        elif model_type.lower() == 'comps':
+            analyst_role = "equity research analyst"
+            focus_area = "peer comparison, relative valuation, and trading multiples"
+        else:
+            analyst_role = "financial analyst"
+            focus_area = "financial modeling and investment analysis"
+        
         prompt = f"""
 User Question: {user_question}
 
 Model Context:
+- Model Type: {model_type.upper()}
+- Company: {company_name}
+- Analysis Focus: {focus_area}
+
+Full Model Data:
 {json.dumps(model_context, indent=2)}
 
-As a financial analyst, provide a clear, professional answer to the user's question about this financial model. 
-Be specific and reference the actual numbers from the model when relevant.
+As a senior {analyst_role}, provide a clear, professional answer to the user's question about this {model_type.upper()} model for {company_name}. 
+Focus on {focus_area} and be specific, referencing actual numbers from the model when relevant.
+Provide actionable insights and practical recommendations.
 """
         
         return prompt
     
-    def _fallback_analysis(self, company_data, dcf_results):
+    def _fallback_model_analysis(self, model_type, company_data, model_results):
         """Fallback analysis when AI is unavailable"""
+        company_name = company_data.get('company_name', 'Unknown')
+        
+        if model_type.lower() == 'dcf':
+            return self._fallback_dcf_analysis(company_data, model_results)
+        elif model_type.lower() == 'lbo':
+            return self._fallback_lbo_analysis(company_data, model_results)
+        elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
+            return self._fallback_ma_analysis(company_data, model_results)
+        elif model_type.lower() == 'comps':
+            return self._fallback_comps_analysis(company_data, model_results)
+        else:
+            return self._fallback_generic_analysis(model_type, company_data, model_results)
+    
+    def _fallback_dcf_analysis(self, company_data, dcf_results):
+        """Fallback DCF analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
         enterprise_value = dcf_results.get('enterprise_value', 0)
         implied_price = dcf_results.get('implied_price', 0)
@@ -2293,7 +2601,7 @@ Be specific and reference the actual numbers from the model when relevant.
         upside_downside = dcf_results.get('upside_downside', 0)
         
         analysis = f"""
-**Investment Analysis for {company_name}**
+**DCF Investment Analysis for {company_name}**
 
 **Valuation Summary:**
 - Enterprise Value: ${enterprise_value/1e9:.1f}B
@@ -2306,6 +2614,137 @@ Be specific and reference the actual numbers from the model when relevant.
 - Consider market conditions and sector trends
 - Evaluate competitive positioning
 - Assess management execution track record
+
+*Note: This is a basic analysis. For detailed insights, AI analysis is currently unavailable.*
+"""
+        
+        return {
+            'analysis': analysis,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_lbo_analysis(self, company_data, lbo_results):
+        """Fallback LBO analysis when AI is unavailable"""
+        company_name = company_data.get('company_name', 'Unknown')
+        irr = lbo_results.get('irr', 0)
+        multiple = lbo_results.get('multiple', 0)
+        debt_capacity = lbo_results.get('debt_capacity', 0)
+        
+        analysis = f"""
+**LBO Analysis for {company_name}**
+
+**LBO Metrics:**
+- Projected IRR: {irr*100:.1f}%
+- Multiple of Money: {multiple:.1f}x
+- Debt Capacity: ${debt_capacity/1e9:.1f}B
+
+**LBO Attractiveness Factors:**
+- Strong cash flow generation potential
+- Stable revenue base for debt service
+- Operational improvement opportunities
+- Clear exit strategy potential
+
+**Key Considerations:**
+- Evaluate debt capacity vs. current leverage
+- Assess operational improvement potential
+- Consider market conditions for exit
+- Review management team capabilities
+
+*Note: This is a basic analysis. For detailed LBO insights, AI analysis is currently unavailable.*
+"""
+        
+        return {
+            'analysis': analysis,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_ma_analysis(self, company_data, ma_results):
+        """Fallback M&A analysis when AI is unavailable"""
+        company_name = company_data.get('company_name', 'Unknown')
+        accretion_dilution = ma_results.get('accretion_dilution', 0)
+        synergy_value = ma_results.get('synergy_value', 0)
+        
+        analysis = f"""
+**M&A Analysis for {company_name}**
+
+**M&A Metrics:**
+- Accretion/(Dilution): {accretion_dilution*100:.1f}%
+- Synergy Value: ${synergy_value/1e9:.1f}B
+
+**Strategic Considerations:**
+- Evaluate strategic fit and rationale
+- Assess synergy realization potential
+- Consider integration challenges
+- Review market reaction expectations
+
+**Key Considerations:**
+- Analyze accretion/dilution impact
+- Evaluate synergy assumptions
+- Consider execution risks
+- Review regulatory considerations
+
+*Note: This is a basic analysis. For detailed M&A insights, AI analysis is currently unavailable.*
+"""
+        
+        return {
+            'analysis': analysis,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_comps_analysis(self, company_data, comps_results):
+        """Fallback Trading Comps analysis when AI is unavailable"""
+        company_name = company_data.get('company_name', 'Unknown')
+        ev_revenue = comps_results.get('ev_revenue', 0)
+        ev_ebitda = comps_results.get('ev_ebitda', 0)
+        pe_ratio = comps_results.get('pe_ratio', 0)
+        
+        analysis = f"""
+**Trading Comparables Analysis for {company_name}**
+
+**Trading Multiples:**
+- EV/Revenue: {ev_revenue:.1f}x
+- EV/EBITDA: {ev_ebitda:.1f}x
+- P/E Ratio: {pe_ratio:.1f}x
+
+**Peer Comparison Factors:**
+- Compare multiples to sector averages
+- Evaluate growth vs. value characteristics
+- Assess competitive positioning
+- Review relative valuation attractiveness
+
+**Key Considerations:**
+- Analyze multiple expansion/contraction potential
+- Consider peer-specific risks
+- Evaluate sector trends
+- Review relative performance metrics
+
+*Note: This is a basic analysis. For detailed peer comparison insights, AI analysis is currently unavailable.*
+"""
+        
+        return {
+            'analysis': analysis,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_generic_analysis(self, model_type, company_data, model_results):
+        """Fallback analysis for any other model type"""
+        company_name = company_data.get('company_name', 'Unknown')
+        
+        analysis = f"""
+**{model_type.upper()} Analysis for {company_name}**
+
+**Model Results Summary:**
+{json.dumps(model_results, indent=2)}
+
+**Key Considerations:**
+- Review model assumptions and methodology
+- Evaluate results against expectations
+- Consider market conditions and trends
+- Assess investment implications
 
 *Note: This is a basic analysis. For detailed insights, AI analysis is currently unavailable.*
 """
@@ -2349,14 +2788,38 @@ Be specific and reference the actual numbers from the model when relevant.
             'timestamp': datetime.now().isoformat()
         }
     
-    def _fallback_chat_response(self, user_question):
+    def _fallback_chat_response(self, user_question, model_context):
         """Fallback chat response when AI is unavailable"""
+        model_type = model_context.get('model_type', 'unknown')
+        company_name = model_context.get('company_name', 'Unknown')
+        
+        # Provide model-specific guidance
+        if model_type.lower() == 'dcf':
+            guidance = "Review the DCF assumptions, terminal value, and WACC. Check if the implied price makes sense relative to current market price."
+        elif model_type.lower() == 'lbo':
+            guidance = "Examine the IRR projections, debt capacity, and exit multiples. Consider if the company has strong cash flow for debt service."
+        elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
+            guidance = "Analyze the accretion/dilution impact, synergy assumptions, and integration risks. Consider strategic fit and market reaction."
+        elif model_type.lower() == 'comps':
+            guidance = "Compare the trading multiples to sector averages and key peers. Evaluate if the company is trading at fair value."
+        else:
+            guidance = "Review the model assumptions and key outputs. Consider the methodology and results against your expectations."
+        
         response = f"""
 I understand you're asking: "{user_question}"
 
-Unfortunately, AI-powered analysis is currently unavailable. However, I can help you understand the financial model by examining the data directly.
+Unfortunately, AI-powered analysis is currently unavailable. However, I can help you understand this {model_type.upper()} model for {company_name}:
 
-Please check the model results page for detailed financial metrics and assumptions. You can also download the Excel file for a comprehensive analysis.
+**Key Areas to Review:**
+{guidance}
+
+**Available Resources:**
+- Model results page with detailed financial metrics
+- Excel download for comprehensive analysis
+- Assumption validation and scenario analysis
+
+**Next Steps:**
+Please examine the model data directly and consider the key metrics relevant to your question.
 
 *Note: For interactive Q&A, AI chat is currently unavailable.*
 """
@@ -3236,27 +3699,29 @@ def generate_model():
             ai_analysis = None
             ai_assumption_validation = None
             
-            if model_result and model_type == 'dcf':
+            if model_result:
                 try:
-                    print(f"🤖 Generating AI analysis for {ticker}")
+                    print(f"🤖 Generating AI analysis for {ticker} ({model_type.upper()})")
                     
-                    # Get company data and DCF results for AI analysis
+                    # Get company data and model results for AI analysis
                     company_data = model_result.get('company_data', {})
                     scenarios = model_result.get('scenarios', {})
                     assumptions = model_result.get('assumptions', {})
                     
-                    # Use base scenario for analysis if available
-                    dcf_results = scenarios.get('base', model_result.get('model_summary', {}).get('valuation_outputs', {}))
+                    # Use base scenario for analysis if available, otherwise use model summary
+                    model_results = scenarios.get('base', model_result.get('model_summary', {}).get('valuation_outputs', {}))
                     
-                    if company_data and dcf_results:
-                        # Generate AI model analysis
-                        ai_analysis = ai_agent.analyze_dcf_model(company_data, dcf_results, scenarios)
-                        print(f"✅ AI analysis generated for {ticker}")
+                    if company_data and model_results:
+                        # Generate AI model analysis for any model type
+                        ai_analysis = ai_agent.analyze_model(model_type, company_data, model_results, scenarios, assumptions)
+                        print(f"✅ AI analysis generated for {ticker} ({model_type.upper()})")
                         
-                        # Generate AI assumption validation
-                        if assumptions and 'base' in assumptions:
-                            ai_assumption_validation = ai_agent.validate_assumptions(company_data, assumptions['base'])
-                            print(f"✅ AI assumption validation generated for {ticker}")
+                        # Generate AI assumption validation (primarily for DCF, but can work for others)
+                        if assumptions and ('base' in assumptions or 'assumptions' in assumptions):
+                            base_assumptions = assumptions.get('base', assumptions.get('assumptions', {}))
+                            if base_assumptions:
+                                ai_assumption_validation = ai_agent.validate_assumptions(company_data, base_assumptions)
+                                print(f"✅ AI assumption validation generated for {ticker}")
                     
                 except Exception as e:
                     print(f"⚠️ AI analysis failed for {ticker}: {e}")
