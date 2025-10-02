@@ -2109,22 +2109,37 @@ class FinancialAIAgent:
             print(f"⚠️ AI client initialization failed: {e}")
     
     def analyze_model(self, model_type, company_data, model_results, scenarios=None, assumptions=None):
-        """Generate comprehensive AI analysis for any model type"""
+        """Generate comprehensive AI analysis for any model type with Phase 2 enhancements"""
         try:
             if not self.claude_client:
                 return self._fallback_model_analysis(model_type, company_data, model_results)
             
-            # Route to specific analysis method based on model type
+            # Get Phase 2 data
+            ticker = company_data.get('ticker', 'UNKNOWN')
+            sector = company_data.get('sector', 'Unknown')
+            
+            # Get research data
+            news_data = research_engine.get_company_news(ticker)
+            earnings_data = research_engine.get_earnings_data(ticker)
+            
+            # Get peer analysis
+            peers = peer_analysis_engine.get_peer_companies(ticker, sector)
+            peer_metrics = peer_analysis_engine.analyze_peer_metrics(ticker, peers)
+            
+            # Get risk analysis
+            risk_assessment = risk_analysis_engine.identify_risks(company_data, model_type)
+            
+            # Route to specific analysis method based on model type with Phase 2 data
             if model_type.lower() == 'dcf':
-                return self._analyze_dcf_model(company_data, model_results, scenarios, assumptions)
+                return self._analyze_dcf_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
             elif model_type.lower() == 'lbo':
-                return self._analyze_lbo_model(company_data, model_results, scenarios, assumptions)
+                return self._analyze_lbo_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
             elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
-                return self._analyze_ma_model(company_data, model_results, scenarios, assumptions)
+                return self._analyze_ma_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
             elif model_type.lower() == 'comps':
-                return self._analyze_comps_model(company_data, model_results, scenarios, assumptions)
+                return self._analyze_comps_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
             else:
-                return self._analyze_generic_model(model_type, company_data, model_results, scenarios, assumptions)
+                return self._analyze_generic_model_enhanced(model_type, company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
             
         except Exception as e:
             print(f"❌ AI analysis failed: {e}")
@@ -2212,6 +2227,111 @@ class FinancialAIAgent:
             'analysis': response.content[0].text,
             'source': 'claude',
             'timestamp': datetime.now().isoformat()
+        }
+    
+    def _analyze_dcf_model_enhanced(self, company_data, dcf_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Generate enhanced DCF analysis with Phase 2 data"""
+        prompt = self._build_dcf_analysis_prompt_enhanced(company_data, dcf_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            }
+        }
+    
+    def _analyze_lbo_model_enhanced(self, company_data, lbo_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Generate enhanced LBO analysis with Phase 2 data"""
+        prompt = self._build_lbo_analysis_prompt_enhanced(company_data, lbo_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            }
+        }
+    
+    def _analyze_ma_model_enhanced(self, company_data, ma_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Generate enhanced M&A analysis with Phase 2 data"""
+        prompt = self._build_ma_analysis_prompt_enhanced(company_data, ma_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            }
+        }
+    
+    def _analyze_comps_model_enhanced(self, company_data, comps_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Generate enhanced Trading Comps analysis with Phase 2 data"""
+        prompt = self._build_comps_analysis_prompt_enhanced(company_data, comps_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            }
+        }
+    
+    def _analyze_generic_model_enhanced(self, model_type, company_data, model_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Generate enhanced analysis for any other model type with Phase 2 data"""
+        prompt = self._build_generic_analysis_prompt_enhanced(model_type, company_data, model_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            }
         }
     
     def validate_assumptions(self, company_data, assumptions):
@@ -2577,6 +2697,386 @@ Provide actionable insights and practical recommendations.
         
         return prompt
     
+    def _build_dcf_analysis_prompt_enhanced(self, company_data, dcf_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Build enhanced DCF analysis prompt with Phase 2 data"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        equity_value = dcf_results.get('equity_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive investment analysis for {company_name} based on this DCF model:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+DCF VALUATION RESULTS:
+- Enterprise Value: ${enterprise_value/1e9:.1f}B
+- Equity Value: ${equity_value/1e9:.1f}B
+- Implied Price: ${implied_price:.2f}
+- Current Price: ${current_price:.2f}
+- Upside/(Downside): {upside_downside:.1f}%
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+                if news.get('summary'):
+                    prompt += f"     Summary: {news.get('summary', '')[:100]}...\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+Please provide:
+1. **Investment Thesis Summary**: Comprehensive analysis incorporating market developments and peer positioning
+2. **Key Valuation Drivers**: Factors driving the valuation with recent news context
+3. **Risk Factors**: Detailed risk analysis incorporating sector and model-specific risks
+4. **Recommendation**: Buy/Hold/Sell with reasoning based on all available data
+5. **Price Target Rationale**: Target price with confidence level
+6. **Recent Developments Impact**: How recent news affects the investment thesis
+
+Focus on integrating all available data sources for a comprehensive investment committee presentation.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                ev = scenario_data.get('enterprise_value', 0)
+                price = scenario_data.get('implied_price', 0)
+                upside = scenario_data.get('upside_downside', 0)
+                prompt += f"- {scenario_name.upper()}: EV=${ev/1e9:.1f}B, Price=${price:.2f}, Upside={upside:.1f}%\n"
+        
+        return prompt
+    
+    def _build_lbo_analysis_prompt_enhanced(self, company_data, lbo_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Build enhanced LBO analysis prompt with Phase 2 data"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        debt_levels = company_data.get('total_debt', 0)
+        
+        irr = lbo_results.get('irr', 0)
+        multiple = lbo_results.get('multiple', 0)
+        debt_capacity = lbo_results.get('debt_capacity', 0)
+        exit_value = lbo_results.get('exit_value', 0)
+        
+        prompt = f"""
+As a senior private equity analyst, provide a comprehensive LBO analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+- Current Debt: ${debt_levels/1e9:.1f}B
+
+LBO MODEL RESULTS:
+- Projected IRR: {irr*100:.1f}%
+- Multiple of Money: {multiple:.1f}x
+- Debt Capacity: ${debt_capacity/1e9:.1f}B
+- Exit Value: ${exit_value/1e9:.1f}B
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+Please provide:
+1. **LBO Attractiveness Assessment**: Is this a good LBO target considering recent developments?
+2. **Financial Profile Analysis**: Debt capacity, cash flow generation, margin expansion potential
+3. **Operational Improvements**: Cost reduction opportunities, revenue growth levers
+4. **Risk Factors**: Key risks to the LBO thesis and exit strategy
+5. **Investment Recommendation**: Proceed/Pass with detailed reasoning
+6. **Value Creation Strategy**: Specific actions to drive returns
+7. **Market Timing**: How current market conditions affect the LBO thesis
+
+Focus on private equity investment criteria and LBO-specific considerations with recent market context.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_irr = scenario_data.get('irr', 0)
+                scenario_multiple = scenario_data.get('multiple', 0)
+                prompt += f"- {scenario_name.upper()}: IRR={scenario_irr*100:.1f}%, Multiple={scenario_multiple:.1f}x\n"
+        
+        return prompt
+    
+    def _build_ma_analysis_prompt_enhanced(self, company_data, ma_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Build enhanced M&A analysis prompt with Phase 2 data"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        accretion_dilution = ma_results.get('accretion_dilution', 0)
+        synergy_value = ma_results.get('synergy_value', 0)
+        purchase_price = ma_results.get('purchase_price', 0)
+        combined_value = ma_results.get('combined_value', 0)
+        
+        prompt = f"""
+As a senior M&A investment banker, provide a comprehensive merger analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+M&A MODEL RESULTS:
+- Accretion/(Dilution): {accretion_dilution*100:.1f}%
+- Synergy Value: ${synergy_value/1e9:.1f}B
+- Purchase Price: ${purchase_price/1e9:.1f}B
+- Combined Enterprise Value: ${combined_value/1e9:.1f}B
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+Please provide:
+1. **Strategic Rationale**: Why does this merger make strategic sense?
+2. **Synergy Analysis**: Revenue synergies, cost synergies, and implementation risks
+3. **Financial Impact**: Accretion/dilution analysis and EPS impact
+4. **Integration Challenges**: Key risks and challenges in combining operations
+5. **Market Reaction**: Expected investor response and trading implications
+6. **Deal Recommendation**: Proceed/Pass with detailed reasoning
+7. **Value Creation**: How this merger creates shareholder value
+8. **Market Timing**: How current market conditions affect the merger thesis
+
+Focus on strategic fit, financial impact, and execution risks with recent market context.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_accretion = scenario_data.get('accretion_dilution', 0)
+                scenario_synergy = scenario_data.get('synergy_value', 0)
+                prompt += f"- {scenario_name.upper()}: Accretion={scenario_accretion*100:.1f}%, Synergies=${scenario_synergy/1e9:.1f}B\n"
+        
+        return prompt
+    
+    def _build_comps_analysis_prompt_enhanced(self, company_data, comps_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Build enhanced Trading Comps analysis prompt with Phase 2 data"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        ev_revenue = comps_results.get('ev_revenue', 0)
+        ev_ebitda = comps_results.get('ev_ebitda', 0)
+        pe_ratio = comps_results.get('pe_ratio', 0)
+        pb_ratio = comps_results.get('pb_ratio', 0)
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive trading comparables analysis for {company_name}:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+TRADING COMPARABLES RESULTS:
+- EV/Revenue Multiple: {ev_revenue:.1f}x
+- EV/EBITDA Multiple: {ev_ebitda:.1f}x
+- P/E Ratio: {pe_ratio:.1f}x
+- P/B Ratio: {pb_ratio:.1f}x
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+Please provide:
+1. **Valuation Assessment**: Is the company trading at fair value vs. peers?
+2. **Peer Comparison**: How does it compare to sector averages and key competitors?
+3. **Multiple Analysis**: Which multiples are most relevant and why?
+4. **Growth vs. Value**: Is this a growth or value play relative to peers?
+5. **Investment Thesis**: Buy/Hold/Sell recommendation with peer-based reasoning
+6. **Key Differentiators**: What makes this company unique vs. peers?
+7. **Risk Factors**: Peer-specific risks and sector headwinds
+8. **Market Context**: How recent developments affect relative valuation
+
+Focus on relative valuation and peer comparison insights with recent market context.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_ev_rev = scenario_data.get('ev_revenue', 0)
+                scenario_pe = scenario_data.get('pe_ratio', 0)
+                prompt += f"- {scenario_name.upper()}: EV/Rev={scenario_ev_rev:.1f}x, P/E={scenario_pe:.1f}x\n"
+        
+        return prompt
+    
+    def _build_generic_analysis_prompt_enhanced(self, model_type, company_data, model_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None):
+        """Build enhanced analysis prompt for any other model type with Phase 2 data"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        
+        prompt = f"""
+As a senior financial analyst, provide a comprehensive analysis for {company_name} based on this {model_type.upper()} model:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+
+MODEL RESULTS:
+{json.dumps(model_results, indent=2)}
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+Please provide:
+1. **Model Assessment**: Key insights from the {model_type.upper()} analysis
+2. **Investment Implications**: What this means for investment decisions
+3. **Risk Factors**: Key risks and considerations
+4. **Recommendation**: Investment recommendation with reasoning
+5. **Next Steps**: Suggested follow-up analysis or actions
+6. **Market Context**: How recent developments affect the analysis
+
+Focus on practical investment insights and actionable recommendations with recent market context.
+"""
+        
+        return prompt
+    
     def _fallback_model_analysis(self, model_type, company_data, model_results):
         """Fallback analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
@@ -2829,6 +3329,320 @@ Please examine the model data directly and consider the key metrics relevant to 
             'source': 'fallback',
             'timestamp': datetime.now().isoformat()
         }
+
+# Phase 2 AI Agent Enhancements
+
+class ResearchEngine:
+    """Automated research integration for market news and earnings"""
+    
+    def __init__(self):
+        self.news_cache = {}
+        self.earnings_cache = {}
+        self.cache_ttl = 3600  # 1 hour cache
+    
+    def get_company_news(self, ticker, limit=5):
+        """Get recent news for a company"""
+        try:
+            # Check cache first
+            cache_key = f"news_{ticker}"
+            if cache_key in self.news_cache:
+                cached_data, timestamp = self.news_cache[cache_key]
+                if (datetime.now().timestamp() - timestamp) < self.cache_ttl:
+                    return cached_data
+            
+            # Fetch news from multiple sources
+            news_items = []
+            
+            # Try to get news from yfinance
+            try:
+                stock = yf.Ticker(ticker)
+                news = stock.news
+                if news:
+                    for item in news[:limit]:
+                        news_items.append({
+                            'title': item.get('title', ''),
+                            'summary': item.get('summary', ''),
+                            'publisher': item.get('publisher', ''),
+                            'published': item.get('providerPublishTime', 0),
+                            'url': item.get('link', '')
+                        })
+            except Exception as e:
+                print(f"⚠️ News fetch failed for {ticker}: {e}")
+            
+            # Cache the results
+            self.news_cache[cache_key] = (news_items, datetime.now().timestamp())
+            
+            return news_items
+            
+        except Exception as e:
+            print(f"❌ Research engine error for {ticker}: {e}")
+            return []
+    
+    def get_earnings_data(self, ticker):
+        """Get recent earnings data"""
+        try:
+            # Check cache first
+            cache_key = f"earnings_{ticker}"
+            if cache_key in self.earnings_cache:
+                cached_data, timestamp = self.earnings_cache[cache_key]
+                if (datetime.now().timestamp() - timestamp) < self.cache_ttl:
+                    return cached_data
+            
+            # Fetch earnings from yfinance
+            try:
+                stock = yf.Ticker(ticker)
+                earnings = stock.earnings
+                calendar = stock.calendar
+                
+                earnings_data = {
+                    'historical_earnings': earnings.to_dict() if not earnings.empty else {},
+                    'upcoming_earnings': calendar.to_dict() if not calendar.empty else {},
+                    'last_updated': datetime.now().isoformat()
+                }
+                
+                # Cache the results
+                self.earnings_cache[cache_key] = (earnings_data, datetime.now().timestamp())
+                
+                return earnings_data
+                
+            except Exception as e:
+                print(f"⚠️ Earnings fetch failed for {ticker}: {e}")
+                return {}
+                
+        except Exception as e:
+            print(f"❌ Earnings engine error for {ticker}: {e}")
+            return {}
+
+class PeerAnalysisEngine:
+    """Comprehensive peer comparison analysis"""
+    
+    def __init__(self):
+        self.peer_cache = {}
+        self.sector_mapping = {
+            'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'ORCL', 'CRM'],
+            'Healthcare': ['JNJ', 'PFE', 'UNH', 'ABBV', 'MRK', 'TMO', 'ABT', 'DHR'],
+            'Financial Services': ['JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'AXP', 'BLK'],
+            'Consumer Discretionary': ['TSLA', 'HD', 'MCD', 'NKE', 'SBUX', 'LOW', 'TJX', 'BKNG'],
+            'Communication Services': ['GOOGL', 'META', 'NFLX', 'DIS', 'CMCSA', 'VZ', 'T', 'CHTR'],
+            'Consumer Staples': ['PG', 'KO', 'PEP', 'WMT', 'COST', 'CL', 'KMB', 'GIS'],
+            'Energy': ['XOM', 'CVX', 'COP', 'EOG', 'SLB', 'PXD', 'MPC', 'VLO'],
+            'Industrials': ['BA', 'CAT', 'GE', 'HON', 'UPS', 'RTX', 'LMT', 'MMM'],
+            'Materials': ['LIN', 'APD', 'SHW', 'ECL', 'DD', 'DOW', 'NEM', 'FCX'],
+            'Real Estate': ['AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'SPG', 'O', 'WELL'],
+            'Utilities': ['NEE', 'DUK', 'SO', 'D', 'AEP', 'EXC', 'XEL', 'PEG']
+        }
+    
+    def get_peer_companies(self, ticker, sector):
+        """Get peer companies for comparison"""
+        try:
+            # Check cache first
+            cache_key = f"peers_{ticker}"
+            if cache_key in self.peer_cache:
+                return self.peer_cache[cache_key]
+            
+            # Get peers from sector mapping
+            sector_peers = self.sector_mapping.get(sector, [])
+            
+            # Remove the target company from peers
+            peers = [peer for peer in sector_peers if peer != ticker.upper()]
+            
+            # Limit to top 5 peers for performance
+            peers = peers[:5]
+            
+            # Cache the results
+            self.peer_cache[cache_key] = peers
+            
+            return peers
+            
+        except Exception as e:
+            print(f"❌ Peer analysis error for {ticker}: {e}")
+            return []
+    
+    def analyze_peer_metrics(self, ticker, peers):
+        """Analyze key metrics across peers"""
+        try:
+            peer_data = {}
+            financial_engine = FinancialDataEngine()
+            
+            for peer in peers:
+                try:
+                    company_data = financial_engine.get_company_data(peer)
+                    if company_data:
+                        peer_data[peer] = {
+                            'market_cap': company_data.get('market_cap', 0),
+                            'revenue': company_data.get('revenue', 0),
+                            'operating_margin': company_data.get('operating_margin', 0),
+                            'current_price': company_data.get('current_price', 0),
+                            'sector': company_data.get('sector', 'Unknown')
+                        }
+                except Exception as e:
+                    print(f"⚠️ Failed to get data for peer {peer}: {e}")
+                    continue
+            
+            return peer_data
+            
+        except Exception as e:
+            print(f"❌ Peer metrics analysis error: {e}")
+            return {}
+
+class RiskAnalysisEngine:
+    """Intelligent risk factor identification"""
+    
+    def __init__(self):
+        self.risk_factors = {
+            'Technology': [
+                'Rapid technological change and obsolescence',
+                'Cybersecurity threats and data breaches',
+                'Regulatory scrutiny and antitrust concerns',
+                'Competition from new entrants',
+                'Supply chain disruptions'
+            ],
+            'Healthcare': [
+                'Regulatory approval delays and rejections',
+                'Patent expirations and generic competition',
+                'Clinical trial failures',
+                'Healthcare policy changes',
+                'Pricing pressure and reimbursement cuts'
+            ],
+            'Financial Services': [
+                'Interest rate sensitivity',
+                'Credit risk and loan defaults',
+                'Regulatory capital requirements',
+                'Economic downturns and market volatility',
+                'Cybersecurity and operational risks'
+            ],
+            'Consumer Discretionary': [
+                'Economic sensitivity and consumer spending',
+                'Seasonal demand fluctuations',
+                'Competition and market share loss',
+                'Supply chain and logistics challenges',
+                'Brand reputation and consumer sentiment'
+            ],
+            'Energy': [
+                'Commodity price volatility',
+                'Environmental regulations and ESG concerns',
+                'Geopolitical risks and supply disruptions',
+                'Renewable energy transition',
+                'Capital expenditure requirements'
+            ]
+        }
+    
+    def identify_risks(self, company_data, model_type):
+        """Identify relevant risk factors for the company and model"""
+        try:
+            sector = company_data.get('sector', 'Unknown')
+            company_name = company_data.get('company_name', 'Unknown')
+            
+            # Get sector-specific risks
+            sector_risks = self.risk_factors.get(sector, [
+                'Market volatility and economic uncertainty',
+                'Competitive pressures and market share loss',
+                'Regulatory changes and compliance costs',
+                'Operational and execution risks',
+                'Financial and liquidity risks'
+            ])
+            
+            # Add model-specific risks
+            model_risks = []
+            if model_type.lower() == 'dcf':
+                model_risks = [
+                    'Terminal value assumptions may be inaccurate',
+                    'WACC and discount rate sensitivity',
+                    'Revenue growth assumptions may not materialize',
+                    'Operating margin expansion may be limited'
+                ]
+            elif model_type.lower() == 'lbo':
+                model_risks = [
+                    'Debt capacity assumptions may be optimistic',
+                    'Exit multiple assumptions may not be achievable',
+                    'Operational improvements may be harder to realize',
+                    'Market conditions may deteriorate during hold period'
+                ]
+            elif model_type.lower() == 'ma':
+                model_risks = [
+                    'Synergy realization may be delayed or reduced',
+                    'Integration challenges may be underestimated',
+                    'Regulatory approval may be denied or delayed',
+                    'Market reaction may be negative'
+                ]
+            elif model_type.lower() == 'comps':
+                model_risks = [
+                    'Peer multiples may not be appropriate comparators',
+                    'Market conditions may change peer valuations',
+                    'Company-specific factors may not be reflected',
+                    'Multiple expansion/contraction may occur'
+                ]
+            
+            # Combine and prioritize risks
+            all_risks = sector_risks + model_risks
+            
+            # Add company-specific risk assessment
+            risk_assessment = {
+                'sector_risks': sector_risks,
+                'model_risks': model_risks,
+                'company_name': company_name,
+                'sector': sector,
+                'model_type': model_type,
+                'risk_level': self._assess_overall_risk_level(company_data, sector_risks),
+                'key_risks': all_risks[:8]  # Top 8 most relevant risks
+            }
+            
+            return risk_assessment
+            
+        except Exception as e:
+            print(f"❌ Risk analysis error: {e}")
+            return {
+                'sector_risks': ['General market and economic risks'],
+                'model_risks': ['Model assumptions may not hold'],
+                'company_name': company_data.get('company_name', 'Unknown'),
+                'sector': company_data.get('sector', 'Unknown'),
+                'model_type': model_type,
+                'risk_level': 'Medium',
+                'key_risks': ['Market volatility', 'Competitive pressures', 'Regulatory changes']
+            }
+    
+    def _assess_overall_risk_level(self, company_data, sector_risks):
+        """Assess overall risk level based on company characteristics"""
+        try:
+            market_cap = company_data.get('market_cap', 0)
+            operating_margin = company_data.get('operating_margin', 0)
+            
+            risk_score = 0
+            
+            # Market cap risk (smaller companies = higher risk)
+            if market_cap < 1000000000:  # < $1B
+                risk_score += 3
+            elif market_cap < 10000000000:  # < $10B
+                risk_score += 2
+            elif market_cap < 100000000000:  # < $100B
+                risk_score += 1
+            
+            # Operating margin risk (lower margins = higher risk)
+            if operating_margin < 0.05:  # < 5%
+                risk_score += 3
+            elif operating_margin < 0.10:  # < 10%
+                risk_score += 2
+            elif operating_margin < 0.15:  # < 15%
+                risk_score += 1
+            
+            # Determine risk level
+            if risk_score >= 5:
+                return 'High'
+            elif risk_score >= 3:
+                return 'Medium-High'
+            elif risk_score >= 1:
+                return 'Medium'
+            else:
+                return 'Low'
+                
+        except Exception as e:
+            print(f"❌ Risk level assessment error: {e}")
+            return 'Medium'
+
+# Initialize Phase 2 engines
+research_engine = ResearchEngine()
+peer_analysis_engine = PeerAnalysisEngine()
+risk_analysis_engine = RiskAnalysisEngine()
 
 # Initialize AI agent
 ai_agent = FinancialAIAgent()
@@ -3344,6 +4158,149 @@ def get_ai_analysis(model_id):
             "message": "Failed to get AI analysis"
         }), 500
 
+# Phase 2 API Endpoints
+
+@app.route('/api/phase2/research/<model_id>')
+def get_phase2_research(model_id):
+    """Get Phase 2 research data for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        ticker = model.get('ticker')
+        if not ticker:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Ticker not found in model"
+            }), 400
+        
+        # Get research data
+        news_data = research_engine.get_company_news(ticker)
+        earnings_data = research_engine.get_earnings_data(ticker)
+        
+        return jsonify({
+            "success": True,
+            "ticker": ticker,
+            "news_data": news_data,
+            "earnings_data": earnings_data,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase2_research: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get research data"
+        }), 500
+
+@app.route('/api/phase2/peers/<model_id>')
+def get_phase2_peers(model_id):
+    """Get Phase 2 peer analysis data for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        ticker = model.get('ticker')
+        company_data = model.get('result', {}).get('company_data', {})
+        sector = company_data.get('sector', 'Unknown')
+        
+        if not ticker:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Ticker not found in model"
+            }), 400
+        
+        # Get peer analysis data
+        peers = peer_analysis_engine.get_peer_companies(ticker, sector)
+        peer_metrics = peer_analysis_engine.analyze_peer_metrics(ticker, peers)
+        
+        return jsonify({
+            "success": True,
+            "ticker": ticker,
+            "sector": sector,
+            "peers": peers,
+            "peer_metrics": peer_metrics,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase2_peers: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get peer analysis data"
+        }), 500
+
+@app.route('/api/phase2/risks/<model_id>')
+def get_phase2_risks(model_id):
+    """Get Phase 2 risk analysis data for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        model_type = model.get('type')
+        company_data = model.get('result', {}).get('company_data', {})
+        
+        if not model_type or not company_data:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Model type or company data not found"
+            }), 400
+        
+        # Get risk analysis data
+        risk_assessment = risk_analysis_engine.identify_risks(company_data, model_type)
+        
+        return jsonify({
+            "success": True,
+            "model_type": model_type,
+            "risk_assessment": risk_assessment,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase2_risks: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get risk analysis data"
+        }), 500
+
+@app.route('/api/phase2/summary/<model_id>')
+def get_phase2_summary(model_id):
+    """Get Phase 2 summary data for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        phase2_data = model.get('phase2_data', {})
+        
+        return jsonify({
+            "success": True,
+            "phase2_data": phase2_data,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase2_summary: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get Phase 2 summary data"
+        }), 500
+
 @app.route('/download/<filename>')
 def download_file(filename):
     """Download Excel file from temp directory"""
@@ -3695,13 +4652,14 @@ def generate_model():
                     # Flash error to user
                     flash(f"Excel generation failed: {str(e)}", 'error')
             
-            # Generate AI analysis for the model
+            # Generate AI analysis for the model with Phase 2 enhancements
             ai_analysis = None
             ai_assumption_validation = None
+            phase2_data = None
             
             if model_result:
                 try:
-                    print(f"🤖 Generating AI analysis for {ticker} ({model_type.upper()})")
+                    print(f"🤖 Generating Phase 2 AI analysis for {ticker} ({model_type.upper()})")
                     
                     # Get company data and model results for AI analysis
                     company_data = model_result.get('company_data', {})
@@ -3712,9 +4670,12 @@ def generate_model():
                     model_results = scenarios.get('base', model_result.get('model_summary', {}).get('valuation_outputs', {}))
                     
                     if company_data and model_results:
-                        # Generate AI model analysis for any model type
+                        # Generate Phase 2 AI model analysis for any model type
                         ai_analysis = ai_agent.analyze_model(model_type, company_data, model_results, scenarios, assumptions)
-                        print(f"✅ AI analysis generated for {ticker} ({model_type.upper()})")
+                        print(f"✅ Phase 2 AI analysis generated for {ticker} ({model_type.upper()})")
+                        
+                        # Extract Phase 2 data from analysis
+                        phase2_data = ai_analysis.get('phase2_data', {})
                         
                         # Generate AI assumption validation (primarily for DCF, but can work for others)
                         if assumptions and ('base' in assumptions or 'assumptions' in assumptions):
@@ -3724,7 +4685,7 @@ def generate_model():
                                 print(f"✅ AI assumption validation generated for {ticker}")
                     
                 except Exception as e:
-                    print(f"⚠️ AI analysis failed for {ticker}: {e}")
+                    print(f"⚠️ Phase 2 AI analysis failed for {ticker}: {e}")
                     # Continue without AI analysis - don't fail the entire model generation
             
             MODEL_STORAGE[model_id] = {
@@ -3737,7 +4698,8 @@ def generate_model():
                 'excel_filename': excel_filename,
                 'file_ready': excel_filename is not None,
                 'ai_analysis': ai_analysis,
-                'ai_assumption_validation': ai_assumption_validation
+                'ai_assumption_validation': ai_assumption_validation,
+                'phase2_data': phase2_data
             }
             
             print(f"🎉 Model {model_id} created successfully for {ticker}")
