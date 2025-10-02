@@ -234,6 +234,99 @@ def validate_session_request(data: dict) -> tuple[bool, dict]:
     
     return len(errors) == 0, errors
 
+def format_company_assumptions_table(company_specific_data, sanity_flags):
+    """Format company-specific assumptions as a table"""
+    try:
+        assumptions = company_specific_data.get('assumptions', {})
+        ticker = company_specific_data.get('ticker', 'Unknown')
+        
+        revenue_growth = assumptions.get('revenue_growth_rate', 0.08)
+        operating_margin = assumptions.get('operating_margin', 0.20)
+        wacc = assumptions.get('wacc', 0.10)
+        terminal_growth = assumptions.get('terminal_growth_rate', 0.025)
+        tax_rate = assumptions.get('tax_rate', 0.23)
+        
+        html_parts = []
+        
+        # Header
+        html_parts.append(f'<div class="text-sm font-medium text-gray-900 mb-3">Company-Specific DCF Assumptions — {ticker}</div>')
+        
+        # Assumptions table
+        html_parts.append('<div class="space-y-2">')
+        
+        # Revenue Growth
+        html_parts.append(f'''
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                <span class="text-sm font-medium text-gray-700">Revenue Growth</span>
+                <span class="text-sm text-gray-900">{revenue_growth*100:.1f}%</span>
+            </div>
+        ''')
+        
+        # Operating Margin
+        html_parts.append(f'''
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                <span class="text-sm font-medium text-gray-700">Operating Margin</span>
+                <span class="text-sm text-gray-900">{operating_margin*100:.1f}%</span>
+            </div>
+        ''')
+        
+        # WACC
+        html_parts.append(f'''
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                <span class="text-sm font-medium text-gray-700">WACC</span>
+                <span class="text-sm text-gray-900">{wacc*100:.1f}%</span>
+            </div>
+        ''')
+        
+        # Terminal Growth
+        html_parts.append(f'''
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                <span class="text-sm font-medium text-gray-700">Terminal Growth</span>
+                <span class="text-sm text-gray-900">{terminal_growth*100:.1f}%</span>
+            </div>
+        ''')
+        
+        # Tax Rate
+        html_parts.append(f'''
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                <span class="text-sm font-medium text-gray-700">Tax Rate</span>
+                <span class="text-sm text-gray-900">{tax_rate*100:.1f}%</span>
+            </div>
+        ''')
+        
+        html_parts.append('</div>')
+        
+        # Sanity flags
+        if sanity_flags:
+            html_parts.append('<div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">')
+            html_parts.append('<div class="text-sm font-medium text-yellow-800 mb-2">⚠️ Sanity Flags</div>')
+            for flag in sanity_flags:
+                html_parts.append(f'<div class="text-xs text-yellow-700">• {flag}</div>')
+            html_parts.append('</div>')
+        
+        return ''.join(html_parts)
+        
+    except Exception as e:
+        print(f"❌ Error formatting company assumptions table: {e}")
+        return '<div class="text-sm text-gray-500">Assumptions data not available</div>'
+
+def format_assumptions_narrative(narrative):
+    """Format assumptions narrative"""
+    try:
+        if not narrative:
+            return ''
+        
+        return f'''
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div class="text-sm font-medium text-blue-800 mb-2">📊 Assumptions Rationale</div>
+                <div class="text-xs text-blue-700 leading-relaxed">{narrative}</div>
+            </div>
+        '''
+        
+    except Exception as e:
+        print(f"❌ Error formatting assumptions narrative: {e}")
+        return ''
+
 class CompanySpecificAssumptionsEngine:
     """Generate company-specific DCF assumptions based on real financial data"""
     
@@ -2549,98 +2642,6 @@ def format_assumptions_html(result):
         </div>
         '''
 
-    def _format_company_assumptions_table(self, company_specific_data, sanity_flags):
-        """Format company-specific assumptions as a table"""
-        try:
-            assumptions = company_specific_data.get('assumptions', {})
-            ticker = company_specific_data.get('ticker', 'Unknown')
-            
-            revenue_growth = assumptions.get('revenue_growth_rate', 0.08)
-            operating_margin = assumptions.get('operating_margin', 0.20)
-            wacc = assumptions.get('wacc', 0.10)
-            terminal_growth = assumptions.get('terminal_growth_rate', 0.025)
-            tax_rate = assumptions.get('tax_rate', 0.23)
-            
-            html_parts = []
-            
-            # Header
-            html_parts.append(f'<div class="text-sm font-medium text-gray-900 mb-3">Company-Specific DCF Assumptions — {ticker}</div>')
-            
-            # Assumptions table
-            html_parts.append('<div class="space-y-2">')
-            
-            # Revenue Growth
-            html_parts.append(f'''
-                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                    <span class="text-sm font-medium text-gray-700">Revenue Growth</span>
-                    <span class="text-sm text-gray-900">{revenue_growth*100:.1f}%</span>
-                </div>
-            ''')
-            
-            # Operating Margin
-            html_parts.append(f'''
-                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                    <span class="text-sm font-medium text-gray-700">Operating Margin</span>
-                    <span class="text-sm text-gray-900">{operating_margin*100:.1f}%</span>
-                </div>
-            ''')
-            
-            # WACC
-            html_parts.append(f'''
-                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                    <span class="text-sm font-medium text-gray-700">WACC</span>
-                    <span class="text-sm text-gray-900">{wacc*100:.1f}%</span>
-                </div>
-            ''')
-            
-            # Terminal Growth
-            html_parts.append(f'''
-                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                    <span class="text-sm font-medium text-gray-700">Terminal Growth</span>
-                    <span class="text-sm text-gray-900">{terminal_growth*100:.1f}%</span>
-                </div>
-            ''')
-            
-            # Tax Rate
-            html_parts.append(f'''
-                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                    <span class="text-sm font-medium text-gray-700">Tax Rate</span>
-                    <span class="text-sm text-gray-900">{tax_rate*100:.1f}%</span>
-                </div>
-            ''')
-            
-            html_parts.append('</div>')
-            
-            # Sanity flags
-            if sanity_flags:
-                html_parts.append('<div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">')
-                html_parts.append('<div class="text-sm font-medium text-yellow-800 mb-2">⚠️ Sanity Flags</div>')
-                for flag in sanity_flags:
-                    html_parts.append(f'<div class="text-xs text-yellow-700">• {flag}</div>')
-                html_parts.append('</div>')
-            
-            return ''.join(html_parts)
-            
-        except Exception as e:
-            print(f"❌ Error formatting company assumptions table: {e}")
-            return '<div class="text-sm text-gray-500">Assumptions data not available</div>'
-    
-    def _format_assumptions_narrative(self, narrative):
-        """Format assumptions narrative"""
-        try:
-            if not narrative:
-                return ''
-            
-            return f'''
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <div class="text-sm font-medium text-blue-800 mb-2">📊 Assumptions Rationale</div>
-                    <div class="text-xs text-blue-700 leading-relaxed">{narrative}</div>
-                </div>
-            '''
-            
-        except Exception as e:
-            print(f"❌ Error formatting assumptions narrative: {e}")
-            return ''
 
 # AI Agent Classes for Phase 1 Integration
 
@@ -7886,9 +7887,9 @@ def model_results(model_id):
                                 </span>
                             </div>
                             <div class="space-y-3">
-                                {self._format_company_assumptions_table(result.get('company_specific_data', {}), result.get('sanity_flags', []))}
+                                {format_company_assumptions_table(result.get('company_specific_data', {}), result.get('sanity_flags', []))}
                             </div>
-                            {self._format_assumptions_narrative(result.get('narrative', ''))}
+                            {format_assumptions_narrative(result.get('narrative', ''))}
                         </div>
 
                         <!-- AI Analysis -->

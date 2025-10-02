@@ -3,9 +3,9 @@
   "ticker": "AAPL",
   "sector": "Technology",
   "industry": "Consumer Electronics",
-  "market_cap": 3781850824704,
+  "market_cap": 3807895617536,
   "shares_outstanding": 14840390000,
-  "beta": 1.109,
+  "beta": 1.094,
   "revenue": 391035.0,
   "ebitda": 134661.0,
   "ebit": 0.0,
@@ -22,6 +22,6 @@
   "ebitda_growth": 0.0,
   "eps_growth": 0.0,
   "data_source": "yfinance",
-  "last_updated": "2025-09-22T14:19:01.276607",
+  "last_updated": "2025-10-02T11:16:57.963564",
   "data_quality_score": 85
 }
