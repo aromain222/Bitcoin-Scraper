@@ -2129,17 +2129,22 @@ class FinancialAIAgent:
             # Get risk analysis
             risk_assessment = risk_analysis_engine.identify_risks(company_data, model_type)
             
-            # Route to specific analysis method based on model type with Phase 2 data
+            # Get Phase 3 advanced analysis
+            advanced_analysis = advanced_analysis_engine.assess_investment_opportunity(
+                company_data, model_results, model_type, peer_metrics, risk_assessment
+            )
+            
+            # Route to specific analysis method based on model type with Phase 2 & 3 data
             if model_type.lower() == 'dcf':
-                return self._analyze_dcf_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
+                return self._analyze_dcf_model_phase3(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
             elif model_type.lower() == 'lbo':
-                return self._analyze_lbo_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
+                return self._analyze_lbo_model_phase3(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
             elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
-                return self._analyze_ma_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
+                return self._analyze_ma_model_phase3(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
             elif model_type.lower() == 'comps':
-                return self._analyze_comps_model_enhanced(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
+                return self._analyze_comps_model_phase3(company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
             else:
-                return self._analyze_generic_model_enhanced(model_type, company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment)
+                return self._analyze_generic_model_phase3(model_type, company_data, model_results, scenarios, assumptions, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
             
         except Exception as e:
             print(f"❌ AI analysis failed: {e}")
@@ -2332,6 +2337,116 @@ class FinancialAIAgent:
                 'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
                 'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
             }
+        }
+    
+    def _analyze_dcf_model_phase3(self, company_data, dcf_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Generate Phase 3 DCF analysis with detailed investment recommendations"""
+        prompt = self._build_dcf_analysis_prompt_phase3(company_data, dcf_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            },
+            'phase3_data': advanced_analysis
+        }
+    
+    def _analyze_lbo_model_phase3(self, company_data, lbo_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Generate Phase 3 LBO analysis with detailed investment recommendations"""
+        prompt = self._build_lbo_analysis_prompt_phase3(company_data, lbo_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            },
+            'phase3_data': advanced_analysis
+        }
+    
+    def _analyze_ma_model_phase3(self, company_data, ma_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Generate Phase 3 M&A analysis with detailed investment recommendations"""
+        prompt = self._build_ma_analysis_prompt_phase3(company_data, ma_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            },
+            'phase3_data': advanced_analysis
+        }
+    
+    def _analyze_comps_model_phase3(self, company_data, comps_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Generate Phase 3 Trading Comps analysis with detailed investment recommendations"""
+        prompt = self._build_comps_analysis_prompt_phase3(company_data, comps_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            },
+            'phase3_data': advanced_analysis
+        }
+    
+    def _analyze_generic_model_phase3(self, model_type, company_data, model_results, scenarios=None, assumptions=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Generate Phase 3 analysis for any other model type with detailed investment recommendations"""
+        prompt = self._build_generic_analysis_prompt_phase3(model_type, company_data, model_results, scenarios, news_data, earnings_data, peer_metrics, risk_assessment, advanced_analysis)
+        
+        response = self.claude_client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            'analysis': response.content[0].text,
+            'source': 'claude',
+            'timestamp': datetime.now().isoformat(),
+            'phase2_data': {
+                'news_count': len(news_data) if news_data else 0,
+                'peers_analyzed': len(peer_metrics) if peer_metrics else 0,
+                'risk_level': risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'
+            },
+            'phase3_data': advanced_analysis
         }
     
     def validate_assumptions(self, company_data, assumptions):
@@ -3077,6 +3192,389 @@ Focus on practical investment insights and actionable recommendations with recen
         
         return prompt
     
+    def _build_dcf_analysis_prompt_phase3(self, company_data, dcf_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Build Phase 3 DCF analysis prompt with detailed investment recommendations"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        equity_value = dcf_results.get('equity_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        
+        # Extract Phase 3 data
+        recommendation = advanced_analysis.get('recommendation', {}) if advanced_analysis else {}
+        opportunity_score = advanced_analysis.get('opportunity_score', 50) if advanced_analysis else 50
+        rationale = advanced_analysis.get('rationale', '') if advanced_analysis else ''
+        key_drivers = advanced_analysis.get('key_drivers', []) if advanced_analysis else []
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive investment analysis for {company_name} with SPECIFIC BUY/SELL/SHORT recommendations:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+DCF VALUATION RESULTS:
+- Enterprise Value: ${enterprise_value/1e9:.1f}B
+- Equity Value: ${equity_value/1e9:.1f}B
+- Implied Price: ${implied_price:.2f}
+- Current Price: ${current_price:.2f}
+- Upside/(Downside): {upside_downside:.1f}%
+
+INVESTMENT RECOMMENDATION:
+- Action: {recommendation.get('action', 'HOLD')}
+- Opportunity Score: {opportunity_score}/100
+- Confidence: {recommendation.get('confidence', 'Medium')}
+- Reasoning: {recommendation.get('reasoning', '')}
+
+KEY INVESTMENT DRIVERS:
+{chr(10).join([f"- {driver}" for driver in key_drivers])}
+
+DETAILED RATIONALE:
+{rationale}
+
+RECENT MARKET DEVELOPMENTS:
+"""
+        
+        if news_data:
+            prompt += f"- Recent News ({len(news_data)} articles):\n"
+            for i, news in enumerate(news_data[:3], 1):
+                prompt += f"  {i}. {news.get('title', 'No title')}\n"
+                if news.get('summary'):
+                    prompt += f"     Summary: {news.get('summary', '')[:100]}...\n"
+        else:
+            prompt += "- No recent news data available\n"
+        
+        prompt += f"""
+PEER COMPARISON ANALYSIS:
+"""
+        
+        if peer_metrics:
+            prompt += f"- Peer Companies Analyzed ({len(peer_metrics)} peers):\n"
+            for peer, metrics in list(peer_metrics.items())[:3]:
+                peer_market_cap = metrics.get('market_cap', 0)
+                peer_margin = metrics.get('operating_margin', 0)
+                prompt += f"  • {peer}: Market Cap ${peer_market_cap/1e9:.1f}B, Margin {peer_margin*100:.1f}%\n"
+        else:
+            prompt += "- No peer comparison data available\n"
+        
+        prompt += f"""
+RISK ASSESSMENT:
+- Overall Risk Level: {risk_assessment.get('risk_level', 'Unknown') if risk_assessment else 'Unknown'}
+- Key Risk Factors: {', '.join(risk_assessment.get('key_risks', [])[:3]) if risk_assessment else 'General market risks'}
+
+SPECIFIC INVESTMENT RECOMMENDATIONS:
+Please provide detailed, actionable recommendations including:
+
+1. **PRIMARY RECOMMENDATION**: {recommendation.get('action', 'HOLD')} with specific reasoning
+2. **PRICE TARGET**: Specific target price with confidence level
+3. **TIMEFRAME**: Short-term (3-6 months) vs Long-term (1-2 years) outlook
+4. **POSITION SIZING**: Recommended portfolio allocation (0-10%)
+5. **ENTRY STRATEGY**: Specific entry points and conditions
+6. **EXIT STRATEGY**: Stop-loss levels and profit-taking targets
+7. **RISK MANAGEMENT**: Specific risk mitigation strategies
+8. **CATALYSTS**: Key events that could drive the stock price
+9. **ALTERNATIVE STRATEGIES**: Options strategies, pairs trades, or hedging approaches
+10. **MONITORING**: Key metrics to track for position management
+
+Focus on providing SPECIFIC, ACTIONABLE investment advice that a portfolio manager can implement immediately.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                ev = scenario_data.get('enterprise_value', 0)
+                price = scenario_data.get('implied_price', 0)
+                upside = scenario_data.get('upside_downside', 0)
+                prompt += f"- {scenario_name.upper()}: EV=${ev/1e9:.1f}B, Price=${price:.2f}, Upside={upside:.1f}%\n"
+        
+        return prompt
+    
+    def _build_lbo_analysis_prompt_phase3(self, company_data, lbo_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Build Phase 3 LBO analysis prompt with detailed investment recommendations"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        debt_levels = company_data.get('total_debt', 0)
+        
+        irr = lbo_results.get('irr', 0)
+        multiple = lbo_results.get('multiple', 0)
+        debt_capacity = lbo_results.get('debt_capacity', 0)
+        exit_value = lbo_results.get('exit_value', 0)
+        
+        # Extract Phase 3 data
+        recommendation = advanced_analysis.get('recommendation', {}) if advanced_analysis else {}
+        opportunity_score = advanced_analysis.get('opportunity_score', 50) if advanced_analysis else 50
+        rationale = advanced_analysis.get('rationale', '') if advanced_analysis else ''
+        key_drivers = advanced_analysis.get('key_drivers', []) if advanced_analysis else []
+        
+        prompt = f"""
+As a senior private equity analyst, provide a comprehensive LBO analysis for {company_name} with SPECIFIC ACQUISITION recommendations:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+- Current Debt: ${debt_levels/1e9:.1f}B
+
+LBO MODEL RESULTS:
+- Projected IRR: {irr*100:.1f}%
+- Multiple of Money: {multiple:.1f}x
+- Debt Capacity: ${debt_capacity/1e9:.1f}B
+- Exit Value: ${exit_value/1e9:.1f}B
+
+INVESTMENT RECOMMENDATION:
+- Action: {recommendation.get('action', 'HOLD')}
+- Opportunity Score: {opportunity_score}/100
+- Confidence: {recommendation.get('confidence', 'Medium')}
+- Reasoning: {recommendation.get('reasoning', '')}
+
+KEY INVESTMENT DRIVERS:
+{chr(10).join([f"- {driver}" for driver in key_drivers])}
+
+DETAILED RATIONALE:
+{rationale}
+
+SPECIFIC LBO RECOMMENDATIONS:
+Please provide detailed, actionable recommendations including:
+
+1. **ACQUISITION DECISION**: Proceed/Pass with specific reasoning
+2. **OFFER PRICE**: Recommended acquisition price range
+3. **DEBT STRUCTURE**: Optimal debt/equity mix and sources
+4. **OPERATIONAL IMPROVEMENTS**: Specific cost reduction and revenue enhancement opportunities
+5. **EXIT STRATEGY**: Recommended exit timeline and method (IPO, sale, dividend recap)
+6. **RETURN EXPECTATIONS**: Expected IRR range and sensitivity analysis
+7. **RISK MITIGATION**: Specific risk management strategies
+8. **COMPETITIVE ADVANTAGES**: Why this company is attractive vs. alternatives
+9. **INTEGRATION PLAN**: Post-acquisition operational integration approach
+10. **MONITORING METRICS**: Key performance indicators to track
+
+Focus on providing SPECIFIC, ACTIONABLE private equity investment advice.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_irr = scenario_data.get('irr', 0)
+                scenario_multiple = scenario_data.get('multiple', 0)
+                prompt += f"- {scenario_name.upper()}: IRR={scenario_irr*100:.1f}%, Multiple={scenario_multiple:.1f}x\n"
+        
+        return prompt
+    
+    def _build_ma_analysis_prompt_phase3(self, company_data, ma_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Build Phase 3 M&A analysis prompt with detailed investment recommendations"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        accretion_dilution = ma_results.get('accretion_dilution', 0)
+        synergy_value = ma_results.get('synergy_value', 0)
+        purchase_price = ma_results.get('purchase_price', 0)
+        combined_value = ma_results.get('combined_value', 0)
+        
+        # Extract Phase 3 data
+        recommendation = advanced_analysis.get('recommendation', {}) if advanced_analysis else {}
+        opportunity_score = advanced_analysis.get('opportunity_score', 50) if advanced_analysis else 50
+        rationale = advanced_analysis.get('rationale', '') if advanced_analysis else ''
+        key_drivers = advanced_analysis.get('key_drivers', []) if advanced_analysis else []
+        
+        prompt = f"""
+As a senior M&A investment banker, provide a comprehensive merger analysis for {company_name} with SPECIFIC DEAL recommendations:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+M&A MODEL RESULTS:
+- Accretion/(Dilution): {accretion_dilution*100:.1f}%
+- Synergy Value: ${synergy_value/1e9:.1f}B
+- Purchase Price: ${purchase_price/1e9:.1f}B
+- Combined Enterprise Value: ${combined_value/1e9:.1f}B
+
+INVESTMENT RECOMMENDATION:
+- Action: {recommendation.get('action', 'HOLD')}
+- Opportunity Score: {opportunity_score}/100
+- Confidence: {recommendation.get('confidence', 'Medium')}
+- Reasoning: {recommendation.get('reasoning', '')}
+
+KEY INVESTMENT DRIVERS:
+{chr(10).join([f"- {driver}" for driver in key_drivers])}
+
+DETAILED RATIONALE:
+{rationale}
+
+SPECIFIC M&A RECOMMENDATIONS:
+Please provide detailed, actionable recommendations including:
+
+1. **DEAL RECOMMENDATION**: Proceed/Pass with specific reasoning
+2. **VALUATION RANGE**: Recommended offer price range and methodology
+3. **SYNERGY REALIZATION**: Specific synergy opportunities and timeline
+4. **INTEGRATION STRATEGY**: Detailed integration plan and challenges
+5. **FINANCING STRUCTURE**: Optimal financing mix and sources
+6. **REGULATORY CONSIDERATIONS**: Antitrust and regulatory approval strategy
+7. **RISK ASSESSMENT**: Key deal risks and mitigation strategies
+8. **COMPETITIVE DYNAMICS**: Market reaction and competitive response
+9. **SHAREHOLDER VALUE**: Expected value creation for shareholders
+10. **EXECUTION TIMELINE**: Deal timeline and key milestones
+
+Focus on providing SPECIFIC, ACTIONABLE M&A investment banking advice.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_accretion = scenario_data.get('accretion_dilution', 0)
+                scenario_synergy = scenario_data.get('synergy_value', 0)
+                prompt += f"- {scenario_name.upper()}: Accretion={scenario_accretion*100:.1f}%, Synergies=${scenario_synergy/1e9:.1f}B\n"
+        
+        return prompt
+    
+    def _build_comps_analysis_prompt_phase3(self, company_data, comps_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Build Phase 3 Trading Comps analysis prompt with detailed investment recommendations"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        ev_revenue = comps_results.get('ev_revenue', 0)
+        ev_ebitda = comps_results.get('ev_ebitda', 0)
+        pe_ratio = comps_results.get('pe_ratio', 0)
+        pb_ratio = comps_results.get('pb_ratio', 0)
+        
+        # Extract Phase 3 data
+        recommendation = advanced_analysis.get('recommendation', {}) if advanced_analysis else {}
+        opportunity_score = advanced_analysis.get('opportunity_score', 50) if advanced_analysis else 50
+        rationale = advanced_analysis.get('rationale', '') if advanced_analysis else ''
+        key_drivers = advanced_analysis.get('key_drivers', []) if advanced_analysis else []
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive trading comparables analysis for {company_name} with SPECIFIC BUY/SELL/SHORT recommendations:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+TRADING COMPARABLES RESULTS:
+- EV/Revenue Multiple: {ev_revenue:.1f}x
+- EV/EBITDA Multiple: {ev_ebitda:.1f}x
+- P/E Ratio: {pe_ratio:.1f}x
+- P/B Ratio: {pb_ratio:.1f}x
+
+INVESTMENT RECOMMENDATION:
+- Action: {recommendation.get('action', 'HOLD')}
+- Opportunity Score: {opportunity_score}/100
+- Confidence: {recommendation.get('confidence', 'Medium')}
+- Reasoning: {recommendation.get('reasoning', '')}
+
+KEY INVESTMENT DRIVERS:
+{chr(10).join([f"- {driver}" for driver in key_drivers])}
+
+DETAILED RATIONALE:
+{rationale}
+
+SPECIFIC TRADING RECOMMENDATIONS:
+Please provide detailed, actionable recommendations including:
+
+1. **PRIMARY RECOMMENDATION**: {recommendation.get('action', 'HOLD')} with specific reasoning
+2. **FAIR VALUE ASSESSMENT**: Is the company trading at fair value vs. peers?
+3. **MULTIPLE EXPANSION/CONTRACTION**: Expected multiple changes and catalysts
+4. **RELATIVE PERFORMANCE**: Expected performance vs. sector and market
+5. **ENTRY/EXIT POINTS**: Specific price levels for position management
+6. **PAIRS TRADING**: Potential pairs trade opportunities with peers
+7. **SECTOR ROTATION**: How sector trends affect the investment thesis
+8. **SHORTING OPPORTUNITIES**: Specific shorting rationale if applicable
+9. **RISK FACTORS**: Peer-specific risks and sector headwinds
+10. **MONITORING**: Key metrics to track for position management
+
+Focus on providing SPECIFIC, ACTIONABLE trading and investment advice.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                scenario_ev_rev = scenario_data.get('ev_revenue', 0)
+                scenario_pe = scenario_data.get('pe_ratio', 0)
+                prompt += f"- {scenario_name.upper()}: EV/Rev={scenario_ev_rev:.1f}x, P/E={scenario_pe:.1f}x\n"
+        
+        return prompt
+    
+    def _build_generic_analysis_prompt_phase3(self, model_type, company_data, model_results, scenarios=None, news_data=None, earnings_data=None, peer_metrics=None, risk_assessment=None, advanced_analysis=None):
+        """Build Phase 3 analysis prompt for any other model type with detailed investment recommendations"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        
+        # Extract Phase 3 data
+        recommendation = advanced_analysis.get('recommendation', {}) if advanced_analysis else {}
+        opportunity_score = advanced_analysis.get('opportunity_score', 50) if advanced_analysis else 50
+        rationale = advanced_analysis.get('rationale', '') if advanced_analysis else ''
+        key_drivers = advanced_analysis.get('key_drivers', []) if advanced_analysis else []
+        
+        prompt = f"""
+As a senior financial analyst, provide a comprehensive analysis for {company_name} based on this {model_type.upper()} model with SPECIFIC investment recommendations:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+
+MODEL RESULTS:
+{json.dumps(model_results, indent=2)}
+
+INVESTMENT RECOMMENDATION:
+- Action: {recommendation.get('action', 'HOLD')}
+- Opportunity Score: {opportunity_score}/100
+- Confidence: {recommendation.get('confidence', 'Medium')}
+- Reasoning: {recommendation.get('reasoning', '')}
+
+KEY INVESTMENT DRIVERS:
+{chr(10).join([f"- {driver}" for driver in key_drivers])}
+
+DETAILED RATIONALE:
+{rationale}
+
+SPECIFIC INVESTMENT RECOMMENDATIONS:
+Please provide detailed, actionable recommendations including:
+
+1. **PRIMARY RECOMMENDATION**: {recommendation.get('action', 'HOLD')} with specific reasoning
+2. **INVESTMENT THESIS**: Clear investment thesis and key assumptions
+3. **RISK/RETURN PROFILE**: Expected risk and return characteristics
+4. **POSITION SIZING**: Recommended portfolio allocation
+5. **TIMEFRAME**: Investment horizon and key milestones
+6. **CATALYSTS**: Key events that could drive value realization
+7. **RISK FACTORS**: Specific risks and mitigation strategies
+8. **MONITORING**: Key metrics to track for position management
+9. **ALTERNATIVE STRATEGIES**: Alternative investment approaches
+10. **EXECUTION PLAN**: Specific steps for implementing the recommendation
+
+Focus on providing SPECIFIC, ACTIONABLE investment advice.
+"""
+        
+        return prompt
+    
     def _fallback_model_analysis(self, model_type, company_data, model_results):
         """Fallback analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
@@ -3638,6 +4136,497 @@ class RiskAnalysisEngine:
         except Exception as e:
             print(f"❌ Risk level assessment error: {e}")
             return 'Medium'
+
+# Phase 3 AI Agent Enhancements
+
+class AdvancedAnalysisEngine:
+    """Advanced analysis engine for detailed investment recommendations"""
+    
+    def __init__(self):
+        self.market_indicators = {}
+        self.sector_trends = {}
+        self.opportunity_cache = {}
+    
+    def assess_investment_opportunity(self, company_data, model_results, model_type, peer_metrics=None, risk_assessment=None):
+        """Assess investment opportunity with specific buy/sell/short recommendations"""
+        try:
+            company_name = company_data.get('company_name', 'Unknown')
+            sector = company_data.get('sector', 'Unknown')
+            market_cap = company_data.get('market_cap', 0)
+            operating_margin = company_data.get('operating_margin', 0)
+            revenue = company_data.get('revenue', 0)
+            
+            # Calculate opportunity score
+            opportunity_score = self._calculate_opportunity_score(company_data, model_results, model_type, peer_metrics, risk_assessment)
+            
+            # Determine investment recommendation
+            recommendation = self._determine_recommendation(opportunity_score, model_results, model_type)
+            
+            # Generate specific rationale
+            rationale = self._generate_rationale(company_data, model_results, model_type, peer_metrics, risk_assessment, recommendation)
+            
+            # Calculate confidence level
+            confidence = self._calculate_confidence(model_results, peer_metrics, risk_assessment)
+            
+            return {
+                'recommendation': recommendation,
+                'opportunity_score': opportunity_score,
+                'confidence_level': confidence,
+                'rationale': rationale,
+                'key_drivers': self._identify_key_drivers(company_data, model_results, model_type),
+                'risk_factors': self._prioritize_risks(risk_assessment),
+                'market_context': self._assess_market_context(sector, model_type),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ Advanced analysis error: {e}")
+            return self._fallback_opportunity_assessment(company_data, model_results, model_type)
+    
+    def _calculate_opportunity_score(self, company_data, model_results, model_type, peer_metrics=None, risk_assessment=None):
+        """Calculate comprehensive opportunity score (0-100)"""
+        try:
+            score = 50  # Base score
+            
+            # Model-specific scoring
+            if model_type.lower() == 'dcf':
+                upside_downside = model_results.get('upside_downside', 0)
+                if upside_downside > 20:
+                    score += 20
+                elif upside_downside > 10:
+                    score += 10
+                elif upside_downside < -20:
+                    score -= 20
+                elif upside_downside < -10:
+                    score -= 10
+                    
+            elif model_type.lower() == 'lbo':
+                irr = model_results.get('irr', 0)
+                if irr > 0.25:
+                    score += 20
+                elif irr > 0.20:
+                    score += 10
+                elif irr < 0.15:
+                    score -= 15
+                    
+            elif model_type.lower() == 'ma':
+                accretion = model_results.get('accretion_dilution', 0)
+                if accretion > 0.05:
+                    score += 15
+                elif accretion > 0.02:
+                    score += 5
+                elif accretion < -0.05:
+                    score -= 15
+                    
+            elif model_type.lower() == 'comps':
+                pe_ratio = model_results.get('pe_ratio', 0)
+                if pe_ratio < 15:  # Value play
+                    score += 15
+                elif pe_ratio > 30:  # Growth play
+                    score += 10
+                elif pe_ratio > 50:  # Overvalued
+                    score -= 10
+            
+            # Company fundamentals
+            operating_margin = company_data.get('operating_margin', 0)
+            if operating_margin > 0.20:
+                score += 10
+            elif operating_margin > 0.15:
+                score += 5
+            elif operating_margin < 0.05:
+                score -= 10
+            
+            # Market cap consideration
+            market_cap = company_data.get('market_cap', 0)
+            if market_cap > 100000000000:  # > $100B
+                score += 5  # Large cap stability
+            elif market_cap < 1000000000:  # < $1B
+                score -= 5  # Small cap risk
+            
+            # Risk adjustment
+            if risk_assessment:
+                risk_level = risk_assessment.get('risk_level', 'Medium')
+                if risk_level == 'Low':
+                    score += 5
+                elif risk_level == 'High':
+                    score -= 10
+                elif risk_level == 'Medium-High':
+                    score -= 5
+            
+            # Peer comparison adjustment
+            if peer_metrics:
+                company_margin = company_data.get('operating_margin', 0)
+                peer_margins = [metrics.get('operating_margin', 0) for metrics in peer_metrics.values()]
+                if peer_margins:
+                    avg_peer_margin = sum(peer_margins) / len(peer_margins)
+                    if company_margin > avg_peer_margin * 1.2:
+                        score += 10
+                    elif company_margin < avg_peer_margin * 0.8:
+                        score -= 10
+            
+            return max(0, min(100, score))
+            
+        except Exception as e:
+            print(f"❌ Opportunity score calculation error: {e}")
+            return 50
+    
+    def _determine_recommendation(self, opportunity_score, model_results, model_type):
+        """Determine specific investment recommendation"""
+        try:
+            if opportunity_score >= 75:
+                return {
+                    'action': 'STRONG BUY',
+                    'confidence': 'High',
+                    'reasoning': 'Exceptional opportunity with strong fundamentals and favorable model results'
+                }
+            elif opportunity_score >= 65:
+                return {
+                    'action': 'BUY',
+                    'confidence': 'Medium-High',
+                    'reasoning': 'Attractive opportunity with good fundamentals and positive model results'
+                }
+            elif opportunity_score >= 55:
+                return {
+                    'action': 'HOLD',
+                    'confidence': 'Medium',
+                    'reasoning': 'Neutral position with mixed signals and moderate risk'
+                }
+            elif opportunity_score >= 45:
+                return {
+                    'action': 'SELL',
+                    'confidence': 'Medium',
+                    'reasoning': 'Unfavorable position with concerning fundamentals or model results'
+                }
+            else:
+                return {
+                    'action': 'STRONG SELL',
+                    'confidence': 'High',
+                    'reasoning': 'Poor opportunity with weak fundamentals and negative model results'
+                }
+                
+        except Exception as e:
+            print(f"❌ Recommendation determination error: {e}")
+            return {
+                'action': 'HOLD',
+                'confidence': 'Low',
+                'reasoning': 'Unable to determine clear recommendation due to data limitations'
+            }
+    
+    def _generate_rationale(self, company_data, model_results, model_type, peer_metrics=None, risk_assessment=None, recommendation=None):
+        """Generate detailed investment rationale"""
+        try:
+            company_name = company_data.get('company_name', 'Unknown')
+            sector = company_data.get('sector', 'Unknown')
+            market_cap = company_data.get('market_cap', 0)
+            operating_margin = company_data.get('operating_margin', 0)
+            
+            rationale_parts = []
+            
+            # Company-specific factors
+            if operating_margin > 0.20:
+                rationale_parts.append(f"{company_name} demonstrates **exceptional operational efficiency** with a {operating_margin*100:.1f}% operating margin, making it attractive for **long-term investment**")
+            elif operating_margin < 0.05:
+                rationale_parts.append(f"{company_name} shows **concerning operational challenges** with only a {operating_margin*100:.1f}% operating margin, suggesting **potential shorting opportunity**")
+            
+            # Market cap considerations
+            if market_cap > 100000000000:  # > $100B
+                rationale_parts.append(f"As a **large-cap company** (${market_cap/1e9:.1f}B), {company_name} offers **stability and liquidity** for institutional investors")
+            elif market_cap < 1000000000:  # < $1B
+                rationale_parts.append(f"As a **small-cap company** (${market_cap/1e6:.1f}M), {company_name} presents **higher risk but potential for significant returns**")
+            
+            # Model-specific rationale
+            if model_type.lower() == 'dcf':
+                upside_downside = model_results.get('upside_downside', 0)
+                implied_price = model_results.get('implied_price', 0)
+                current_price = model_results.get('current_price', 0)
+                
+                if upside_downside > 20:
+                    rationale_parts.append(f"The DCF model suggests **significant upside potential** ({upside_downside:.1f}%) with implied price of ${implied_price:.2f} vs current ${current_price:.2f}, making this a **strong buy opportunity**")
+                elif upside_downside < -20:
+                    rationale_parts.append(f"The DCF model indicates **substantial downside risk** ({upside_downside:.1f}%) with implied price of ${implied_price:.2f} vs current ${current_price:.2f}, suggesting a **shorting opportunity**")
+                    
+            elif model_type.lower() == 'lbo':
+                irr = model_results.get('irr', 0)
+                multiple = model_results.get('multiple', 0)
+                
+                if irr > 0.25:
+                    rationale_parts.append(f"The LBO model projects **exceptional returns** ({irr*100:.1f}% IRR, {multiple:.1f}x multiple), making this an **attractive acquisition target**")
+                elif irr < 0.15:
+                    rationale_parts.append(f"The LBO model shows **modest returns** ({irr*100:.1f}% IRR, {multiple:.1f}x multiple), suggesting **limited private equity interest**")
+                    
+            elif model_type.lower() == 'ma':
+                accretion = model_results.get('accretion_dilution', 0)
+                synergy_value = model_results.get('synergy_value', 0)
+                
+                if accretion > 0.05:
+                    rationale_parts.append(f"The M&A model indicates **strong accretion potential** ({accretion*100:.1f}%) with ${synergy_value/1e9:.1f}B in synergies, making this a **compelling merger candidate**")
+                elif accretion < -0.05:
+                    rationale_parts.append(f"The M&A model suggests **significant dilution risk** ({accretion*100:.1f}%) with limited synergies, indicating **poor merger prospects**")
+                    
+            elif model_type.lower() == 'comps':
+                pe_ratio = model_results.get('pe_ratio', 0)
+                ev_revenue = model_results.get('ev_revenue', 0)
+                
+                if pe_ratio < 15:
+                    rationale_parts.append(f"Trading at {pe_ratio:.1f}x P/E and {ev_revenue:.1f}x EV/Revenue, {company_name} appears **undervalued relative to peers**, presenting a **value investment opportunity**")
+                elif pe_ratio > 50:
+                    rationale_parts.append(f"Trading at {pe_ratio:.1f}x P/E and {ev_revenue:.1f}x EV/Revenue, {company_name} appears **significantly overvalued**, suggesting a **shorting opportunity**")
+            
+            # Peer comparison
+            if peer_metrics:
+                company_margin = company_data.get('operating_margin', 0)
+                peer_margins = [metrics.get('operating_margin', 0) for metrics in peer_metrics.values()]
+                if peer_margins:
+                    avg_peer_margin = sum(peer_margins) / len(peer_margins)
+                    if company_margin > avg_peer_margin * 1.2:
+                        rationale_parts.append(f"{company_name} **outperforms sector peers** with {company_margin*100:.1f}% margin vs {avg_peer_margin*100:.1f}% average, indicating **competitive advantage**")
+                    elif company_margin < avg_peer_margin * 0.8:
+                        rationale_parts.append(f"{company_name} **underperforms sector peers** with {company_margin*100:.1f}% margin vs {avg_peer_margin*100:.1f}% average, suggesting **competitive disadvantage**")
+            
+            # Risk factors
+            if risk_assessment:
+                risk_level = risk_assessment.get('risk_level', 'Medium')
+                if risk_level == 'High':
+                    rationale_parts.append(f"**High risk profile** requires careful consideration, but may present **contrarian opportunities** for risk-tolerant investors")
+                elif risk_level == 'Low':
+                    rationale_parts.append(f"**Low risk profile** provides **defensive characteristics** suitable for conservative portfolios")
+            
+            return ' '.join(rationale_parts) if rationale_parts else f"Based on the {model_type.upper()} analysis, {company_name} presents a {recommendation.get('action', 'HOLD')} opportunity."
+            
+        except Exception as e:
+            print(f"❌ Rationale generation error: {e}")
+            return f"Investment analysis for {company_data.get('company_name', 'Unknown')} based on {model_type.upper()} model."
+    
+    def _identify_key_drivers(self, company_data, model_results, model_type):
+        """Identify key investment drivers"""
+        try:
+            drivers = []
+            
+            # Financial drivers
+            operating_margin = company_data.get('operating_margin', 0)
+            if operating_margin > 0.20:
+                drivers.append("High operational efficiency")
+            elif operating_margin < 0.05:
+                drivers.append("Operational challenges")
+            
+            # Model-specific drivers
+            if model_type.lower() == 'dcf':
+                upside_downside = model_results.get('upside_downside', 0)
+                if abs(upside_downside) > 15:
+                    drivers.append("Significant valuation gap")
+                    
+            elif model_type.lower() == 'lbo':
+                irr = model_results.get('irr', 0)
+                if irr > 0.20:
+                    drivers.append("Strong cash flow generation")
+                    
+            elif model_type.lower() == 'ma':
+                accretion = model_results.get('accretion_dilution', 0)
+                if abs(accretion) > 0.03:
+                    drivers.append("Meaningful synergy potential")
+                    
+            elif model_type.lower() == 'comps':
+                pe_ratio = model_results.get('pe_ratio', 0)
+                if pe_ratio < 15:
+                    drivers.append("Value characteristics")
+                elif pe_ratio > 30:
+                    drivers.append("Growth characteristics")
+            
+            return drivers[:5]  # Top 5 drivers
+            
+        except Exception as e:
+            print(f"❌ Key drivers identification error: {e}")
+            return ["Financial performance", "Market conditions", "Competitive positioning"]
+    
+    def _prioritize_risks(self, risk_assessment):
+        """Prioritize and categorize risks"""
+        try:
+            if not risk_assessment:
+                return ["Market volatility", "Economic uncertainty"]
+            
+            key_risks = risk_assessment.get('key_risks', [])
+            risk_level = risk_assessment.get('risk_level', 'Medium')
+            
+            prioritized_risks = []
+            
+            # Add risk level context
+            if risk_level == 'High':
+                prioritized_risks.append("High overall risk profile")
+            elif risk_level == 'Low':
+                prioritized_risks.append("Low overall risk profile")
+            
+            # Add top risks
+            prioritized_risks.extend(key_risks[:3])
+            
+            return prioritized_risks
+            
+        except Exception as e:
+            print(f"❌ Risk prioritization error: {e}")
+            return ["Market volatility", "Competitive pressures", "Regulatory changes"]
+    
+    def _assess_market_context(self, sector, model_type):
+        """Assess current market context for the sector and model type"""
+        try:
+            context = []
+            
+            # Sector-specific context
+            if sector == 'Technology':
+                context.append("Technology sector experiencing rapid innovation and disruption")
+            elif sector == 'Healthcare':
+                context.append("Healthcare sector facing regulatory and demographic changes")
+            elif sector == 'Financial Services':
+                context.append("Financial services sector sensitive to interest rate changes")
+            elif sector == 'Energy':
+                context.append("Energy sector transitioning to renewable sources")
+            
+            # Model-specific context
+            if model_type.lower() == 'dcf':
+                context.append("DCF models sensitive to interest rate and growth assumptions")
+            elif model_type.lower() == 'lbo':
+                context.append("LBO market conditions affecting debt availability and exit multiples")
+            elif model_type.lower() == 'ma':
+                context.append("M&A market activity influenced by regulatory and economic conditions")
+            elif model_type.lower() == 'comps':
+                context.append("Trading multiples affected by market sentiment and sector rotation")
+            
+            return context
+            
+        except Exception as e:
+            print(f"❌ Market context assessment error: {e}")
+            return ["Current market conditions", "Sector trends", "Economic environment"]
+    
+    def _calculate_confidence(self, model_results, peer_metrics=None, risk_assessment=None):
+        """Calculate confidence level in the analysis"""
+        try:
+            confidence_factors = []
+            
+            # Model results quality
+            if model_results:
+                confidence_factors.append("Strong model results")
+            
+            # Peer data availability
+            if peer_metrics and len(peer_metrics) >= 3:
+                confidence_factors.append("Comprehensive peer data")
+            
+            # Risk assessment completeness
+            if risk_assessment and risk_assessment.get('risk_level'):
+                confidence_factors.append("Complete risk assessment")
+            
+            # Determine confidence level
+            if len(confidence_factors) >= 3:
+                return "High"
+            elif len(confidence_factors) >= 2:
+                return "Medium"
+            else:
+                return "Low"
+                
+        except Exception as e:
+            print(f"❌ Confidence calculation error: {e}")
+            return "Low"
+    
+    def _fallback_opportunity_assessment(self, company_data, model_results, model_type):
+        """Fallback opportunity assessment when advanced analysis fails"""
+        return {
+            'recommendation': {
+                'action': 'HOLD',
+                'confidence': 'Low',
+                'reasoning': 'Limited data available for comprehensive analysis'
+            },
+            'opportunity_score': 50,
+            'confidence_level': 'Low',
+            'rationale': f"Basic analysis for {company_data.get('company_name', 'Unknown')} based on {model_type.upper()} model.",
+            'key_drivers': ['Financial performance', 'Market conditions'],
+            'risk_factors': ['Market volatility', 'Economic uncertainty'],
+            'market_context': ['Current market conditions'],
+            'timestamp': datetime.now().isoformat()
+        }
+
+class ScenarioGenerator:
+    """Intelligent scenario generation with market conditions"""
+    
+    def __init__(self):
+        self.scenario_templates = {
+            'dcf': {
+                'bull': {'revenue_growth_multiplier': 1.5, 'margin_expansion': 0.02, 'wacc_reduction': 0.01},
+                'bear': {'revenue_growth_multiplier': 0.5, 'margin_contraction': 0.02, 'wacc_increase': 0.01},
+                'base': {'revenue_growth_multiplier': 1.0, 'margin_expansion': 0.0, 'wacc_change': 0.0}
+            },
+            'lbo': {
+                'bull': {'irr_multiplier': 1.3, 'multiple_expansion': 0.2, 'debt_capacity_increase': 0.1},
+                'bear': {'irr_multiplier': 0.7, 'multiple_contraction': 0.2, 'debt_capacity_decrease': 0.1},
+                'base': {'irr_multiplier': 1.0, 'multiple_change': 0.0, 'debt_capacity_change': 0.0}
+            }
+        }
+    
+    def generate_intelligent_scenarios(self, company_data, model_type, base_scenario):
+        """Generate intelligent scenarios based on market conditions and company characteristics"""
+        try:
+            scenarios = {}
+            
+            # Get base scenario
+            scenarios['base'] = base_scenario
+            
+            # Generate bull scenario
+            scenarios['bull'] = self._generate_bull_scenario(company_data, model_type, base_scenario)
+            
+            # Generate bear scenario
+            scenarios['bear'] = self._generate_bear_scenario(company_data, model_type, base_scenario)
+            
+            return scenarios
+            
+        except Exception as e:
+            print(f"❌ Scenario generation error: {e}")
+            return {'base': base_scenario}
+    
+    def _generate_bull_scenario(self, company_data, model_type, base_scenario):
+        """Generate optimistic scenario"""
+        try:
+            bull_scenario = base_scenario.copy()
+            
+            if model_type.lower() == 'dcf':
+                # Optimistic assumptions
+                bull_scenario['revenue_growth_1'] = base_scenario.get('revenue_growth_1', 0.08) * 1.5
+                bull_scenario['operating_margin'] = base_scenario.get('operating_margin', 0.15) + 0.02
+                bull_scenario['wacc'] = base_scenario.get('wacc', 0.10) - 0.01
+                
+            elif model_type.lower() == 'lbo':
+                # Optimistic LBO assumptions
+                bull_scenario['irr'] = base_scenario.get('irr', 0.20) * 1.3
+                bull_scenario['multiple'] = base_scenario.get('multiple', 2.0) + 0.2
+                bull_scenario['debt_capacity'] = base_scenario.get('debt_capacity', 1000000000) * 1.1
+                
+            return bull_scenario
+            
+        except Exception as e:
+            print(f"❌ Bull scenario generation error: {e}")
+            return base_scenario
+    
+    def _generate_bear_scenario(self, company_data, model_type, base_scenario):
+        """Generate pessimistic scenario"""
+        try:
+            bear_scenario = base_scenario.copy()
+            
+            if model_type.lower() == 'dcf':
+                # Pessimistic assumptions
+                bear_scenario['revenue_growth_1'] = base_scenario.get('revenue_growth_1', 0.08) * 0.5
+                bear_scenario['operating_margin'] = base_scenario.get('operating_margin', 0.15) - 0.02
+                bear_scenario['wacc'] = base_scenario.get('wacc', 0.10) + 0.01
+                
+            elif model_type.lower() == 'lbo':
+                # Pessimistic LBO assumptions
+                bear_scenario['irr'] = base_scenario.get('irr', 0.20) * 0.7
+                bear_scenario['multiple'] = base_scenario.get('multiple', 2.0) - 0.2
+                bear_scenario['debt_capacity'] = base_scenario.get('debt_capacity', 1000000000) * 0.9
+                
+            return bear_scenario
+            
+        except Exception as e:
+            print(f"❌ Bear scenario generation error: {e}")
+            return base_scenario
+
+# Initialize Phase 3 engines
+advanced_analysis_engine = AdvancedAnalysisEngine()
+scenario_generator = ScenarioGenerator()
 
 # Initialize Phase 2 engines
 research_engine = ResearchEngine()
@@ -4301,6 +5290,158 @@ def get_phase2_summary(model_id):
             "message": "Failed to get Phase 2 summary data"
         }), 500
 
+# Phase 3 API Endpoints
+
+@app.route('/api/phase3/recommendation/<model_id>')
+def get_phase3_recommendation(model_id):
+    """Get Phase 3 investment recommendation for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        phase3_data = model.get('phase3_data', {})
+        if not phase3_data:
+            return jsonify({
+                "error": "not_available",
+                "message": "Phase 3 analysis not available for this model"
+            }), 404
+        
+        return jsonify({
+            "success": True,
+            "recommendation": phase3_data.get('recommendation', {}),
+            "opportunity_score": phase3_data.get('opportunity_score', 50),
+            "confidence_level": phase3_data.get('confidence_level', 'Medium'),
+            "rationale": phase3_data.get('rationale', ''),
+            "key_drivers": phase3_data.get('key_drivers', []),
+            "risk_factors": phase3_data.get('risk_factors', []),
+            "market_context": phase3_data.get('market_context', []),
+            "timestamp": phase3_data.get('timestamp', datetime.now().isoformat())
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase3_recommendation: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get Phase 3 recommendation data"
+        }), 500
+
+@app.route('/api/phase3/advanced-analysis/<model_id>')
+def get_phase3_advanced_analysis(model_id):
+    """Get Phase 3 advanced analysis for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        model_type = model.get('type')
+        company_data = model.get('result', {}).get('company_data', {})
+        model_results = model.get('result', {}).get('scenarios', {}).get('base', {})
+        
+        if not model_type or not company_data or not model_results:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Model data incomplete"
+            }), 400
+        
+        # Get peer analysis
+        ticker = model.get('ticker')
+        sector = company_data.get('sector', 'Unknown')
+        peers = peer_analysis_engine.get_peer_companies(ticker, sector)
+        peer_metrics = peer_analysis_engine.analyze_peer_metrics(ticker, peers)
+        
+        # Get risk analysis
+        risk_assessment = risk_analysis_engine.identify_risks(company_data, model_type)
+        
+        # Generate advanced analysis
+        advanced_analysis = advanced_analysis_engine.assess_investment_opportunity(
+            company_data, model_results, model_type, peer_metrics, risk_assessment
+        )
+        
+        return jsonify({
+            "success": True,
+            "advanced_analysis": advanced_analysis,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase3_advanced_analysis: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get Phase 3 advanced analysis"
+        }), 500
+
+@app.route('/api/phase3/scenarios/<model_id>')
+def get_phase3_scenarios(model_id):
+    """Get Phase 3 intelligent scenarios for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        model_type = model.get('type')
+        company_data = model.get('result', {}).get('company_data', {})
+        base_scenario = model.get('result', {}).get('scenarios', {}).get('base', {})
+        
+        if not model_type or not company_data or not base_scenario:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Model data incomplete"
+            }), 400
+        
+        # Generate intelligent scenarios
+        scenarios = scenario_generator.generate_intelligent_scenarios(
+            company_data, model_type, base_scenario
+        )
+        
+        return jsonify({
+            "success": True,
+            "scenarios": scenarios,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase3_scenarios: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get Phase 3 scenarios"
+        }), 500
+
+@app.route('/api/phase3/summary/<model_id>')
+def get_phase3_summary(model_id):
+    """Get Phase 3 summary data for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        phase3_data = model.get('phase3_data', {})
+        
+        return jsonify({
+            "success": True,
+            "phase3_data": phase3_data,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"Error in get_phase3_summary: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get Phase 3 summary data"
+        }), 500
+
 @app.route('/download/<filename>')
 def download_file(filename):
     """Download Excel file from temp directory"""
@@ -4674,8 +5815,9 @@ def generate_model():
                         ai_analysis = ai_agent.analyze_model(model_type, company_data, model_results, scenarios, assumptions)
                         print(f"✅ Phase 2 AI analysis generated for {ticker} ({model_type.upper()})")
                         
-                        # Extract Phase 2 data from analysis
+                        # Extract Phase 2 and Phase 3 data from analysis
                         phase2_data = ai_analysis.get('phase2_data', {})
+                        phase3_data = ai_analysis.get('phase3_data', {})
                         
                         # Generate AI assumption validation (primarily for DCF, but can work for others)
                         if assumptions and ('base' in assumptions or 'assumptions' in assumptions):
@@ -4699,7 +5841,8 @@ def generate_model():
                 'file_ready': excel_filename is not None,
                 'ai_analysis': ai_analysis,
                 'ai_assumption_validation': ai_assumption_validation,
-                'phase2_data': phase2_data
+                'phase2_data': phase2_data,
+                'phase3_data': phase3_data
             }
             
             print(f"🎉 Model {model_id} created successfully for {ticker}")
