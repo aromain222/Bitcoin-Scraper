@@ -3670,25 +3670,125 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         
         # Risk Factors
         analysis_parts.append("KEY RISK FACTORS:")
-        analysis_parts.append("Market volatility and economic uncertainty")
-        analysis_parts.append("Competitive pressures and market share loss")
-        analysis_parts.append("Regulatory changes and compliance costs")
-        analysis_parts.append("DCF model sensitivity to assumptions")
-        analysis_parts.append("Terminal value assumptions may be inaccurate")
+        
+        # Sector-specific risks
+        if sector == 'Technology':
+            analysis_parts.append("- Technology disruption and rapid obsolescence risk")
+            analysis_parts.append("- Regulatory scrutiny on data privacy and antitrust")
+            analysis_parts.append("- Talent retention and competitive hiring pressures")
+            analysis_parts.append("- Innovation cycles creating market share volatility")
+        elif sector == 'Healthcare':
+            analysis_parts.append("- Regulatory approval delays and compliance costs")
+            analysis_parts.append("- Patent cliff exposure and generic competition")
+            analysis_parts.append("- Clinical trial failures and safety concerns")
+            analysis_parts.append("- Healthcare policy changes affecting reimbursement")
+        elif sector == 'Financial Services':
+            analysis_parts.append("- Interest rate sensitivity affecting margins")
+            analysis_parts.append("- Regulatory capital requirements constraining returns")
+            analysis_parts.append("- Credit quality deterioration in economic downturns")
+            analysis_parts.append("- Digital disruption from fintech competitors")
+        elif sector == 'Consumer Discretionary':
+            analysis_parts.append("- Economic sensitivity and consumer spending volatility")
+            analysis_parts.append("- E-commerce disruption and omnichannel challenges")
+            analysis_parts.append("- Supply chain disruptions and cost inflation")
+            analysis_parts.append("- Brand reputation and competitive positioning risks")
+        elif sector == 'Energy':
+            analysis_parts.append("- Commodity price volatility affecting margins")
+            analysis_parts.append("- ESG pressures accelerating energy transition")
+            analysis_parts.append("- Geopolitical risks affecting supply chains")
+            analysis_parts.append("- Capital intensity and investment allocation risks")
+        else:
+            analysis_parts.append("- Industry-specific competitive and regulatory risks")
+            analysis_parts.append("- Economic cycle sensitivity and demand volatility")
+            analysis_parts.append("- Technology disruption affecting business models")
+            analysis_parts.append("- ESG factors increasingly impacting valuations")
+        
+        # Market cap-specific risks
+        if market_cap > 200000000000:  # > $200B
+            analysis_parts.append("- Regulatory scrutiny increases with market dominance")
+            analysis_parts.append("- Limited upside potential due to size constraints")
+            analysis_parts.append("- Institutional ownership creates selling pressure")
+        elif market_cap < 1000000000:  # < $1B
+            analysis_parts.append("- Limited analyst coverage creates information gaps")
+            analysis_parts.append("- Liquidity constraints affecting institutional participation")
+            analysis_parts.append("- Higher execution risk and operational leverage")
+        
+        # Valuation-specific risks
+        if abs(upside_downside) > 30:
+            analysis_parts.append("- Significant valuation gap creates volatility risk")
+            analysis_parts.append("- Market sentiment shifts can amplify price movements")
+        elif upside_downside < -20:
+            analysis_parts.append("- Downside risk from continued valuation compression")
+            analysis_parts.append("- Potential for further multiple contraction")
+        
+        # DCF-specific risks
+        analysis_parts.append("- DCF model sensitivity to key assumption changes")
+        analysis_parts.append("- Terminal value assumptions may be inaccurate")
+        analysis_parts.append("- Revenue growth assumptions require validation")
+        analysis_parts.append("- Margin expansion assumptions need operational support")
+        
         analysis_parts.append("")
         
         # Specific Recommendations
         analysis_parts.append("SPECIFIC INVESTMENT RECOMMENDATIONS:")
-        analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
-        analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
-        analysis_parts.append("3. TIMEFRAME: Long-term (1-2 years) investment horizon")
-        analysis_parts.append("4. POSITION SIZING: 2-5% portfolio allocation recommended")
-        analysis_parts.append("5. ENTRY STRATEGY: Consider dollar-cost averaging for volatility")
-        analysis_parts.append("6. EXIT STRATEGY: Monitor key operational metrics quarterly")
-        analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 15-20% below entry")
-        analysis_parts.append("8. CATALYSTS: Earnings reports, sector trends, market conditions")
-        analysis_parts.append("9. MONITORING: Track revenue growth, margin expansion, market share")
-        analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider options for volatility management")
+        
+        # Recommendation-specific guidance
+        if recommendation == "STRONG BUY":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+            analysis_parts.append("3. TIMEFRAME: Long-term (1-2 years) investment horizon")
+            analysis_parts.append("4. POSITION SIZING: 3-7% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Consider dollar-cost averaging for volatility")
+            analysis_parts.append("6. EXIT STRATEGY: Monitor key operational metrics quarterly")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 20-25% below entry")
+            analysis_parts.append("8. CATALYSTS: Earnings reports, sector trends, market conditions")
+            analysis_parts.append("9. MONITORING: Track revenue growth, margin expansion, market share")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider options for volatility management")
+        elif recommendation == "BUY":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+            analysis_parts.append("3. TIMEFRAME: Medium-term (6-18 months) investment horizon")
+            analysis_parts.append("4. POSITION SIZING: 2-5% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Wait for pullbacks or market weakness")
+            analysis_parts.append("6. EXIT STRATEGY: Monitor quarterly earnings and guidance")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 15-20% below entry")
+            analysis_parts.append("8. CATALYSTS: Earnings beats, sector rotation, market recovery")
+            analysis_parts.append("9. MONITORING: Track operational metrics and competitive position")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider covered calls for income")
+        elif recommendation == "HOLD":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+            analysis_parts.append("3. TIMEFRAME: Short to medium-term (3-12 months)")
+            analysis_parts.append("4. POSITION SIZING: 1-3% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Only on significant pullbacks")
+            analysis_parts.append("6. EXIT STRATEGY: Consider trimming on strength")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 10-15% below entry")
+            analysis_parts.append("8. CATALYSTS: Operational improvements, market conditions")
+            analysis_parts.append("9. MONITORING: Focus on margin expansion and efficiency")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider defensive positioning")
+        elif recommendation == "SELL":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+            analysis_parts.append("3. TIMEFRAME: Short-term (1-6 months) exit horizon")
+            analysis_parts.append("4. POSITION SIZING: Reduce to 0-1% portfolio allocation")
+            analysis_parts.append("5. ENTRY STRATEGY: Avoid new positions")
+            analysis_parts.append("6. EXIT STRATEGY: Sell on any strength or rallies")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 5-10% below entry")
+            analysis_parts.append("8. CATALYSTS: Negative earnings surprises, sector headwinds")
+            analysis_parts.append("9. MONITORING: Watch for deteriorating fundamentals")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider short positions or puts")
+        else:  # STRONG SELL
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (DCF implied value)")
+            analysis_parts.append("3. TIMEFRAME: Immediate exit recommended")
+            analysis_parts.append("4. POSITION SIZING: Exit all positions immediately")
+            analysis_parts.append("5. ENTRY STRATEGY: Avoid at all costs")
+            analysis_parts.append("6. EXIT STRATEGY: Sell immediately regardless of price")
+            analysis_parts.append("7. RISK MANAGEMENT: No stop-loss needed - exit now")
+            analysis_parts.append("8. CATALYSTS: Fundamental deterioration, sector collapse")
+            analysis_parts.append("9. MONITORING: Watch for further downside")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider short positions")
+        
         analysis_parts.append("")
         
         # Market Context
