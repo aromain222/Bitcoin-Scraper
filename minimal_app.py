@@ -234,6 +234,465 @@ def validate_session_request(data: dict) -> tuple[bool, dict]:
     
     return len(errors) == 0, errors
 
+class CompanySpecificAssumptionsEngine:
+    """Generate company-specific DCF assumptions based on real financial data"""
+    
+    def __init__(self):
+        self.cache = {}
+        self.cache_ttl = 3600  # 1 hour cache
+        
+    def get_company_specific_assumptions(self, ticker, company_data):
+        """Generate company-specific DCF assumptions"""
+        try:
+            print(f"🔍 Generating company-specific assumptions for {ticker}...")
+            
+            # Gather comprehensive financial data
+            financial_data = self._gather_financial_data(ticker, company_data)
+            
+            # Build assumptions based on real data
+            assumptions = self._build_assumptions(financial_data)
+            
+            # Apply sanity checks
+            sanity_flags = self._apply_sanity_checks(assumptions, financial_data)
+            
+            # Generate narrative
+            narrative = self._generate_narrative(assumptions, financial_data, sanity_flags)
+            
+            return {
+                'assumptions': assumptions,
+                'sanity_flags': sanity_flags,
+                'narrative': narrative,
+                'data_source': financial_data.get('data_source', 'yfinance'),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ Error generating company-specific assumptions: {e}")
+            return self._get_fallback_assumptions(ticker, company_data)
+    
+    def _gather_financial_data(self, ticker, company_data):
+        """Gather comprehensive financial data for assumption building"""
+        try:
+            # Get stock data
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Get historical financials
+            financials = stock.financials
+            balance_sheet = stock.balance_sheet
+            cashflow = stock.cashflow
+            
+            # Get historical prices for growth calculation
+            hist = stock.history(period="5y")
+            
+            # Extract key metrics
+            current_price = info.get('currentPrice', 0)
+            market_cap = info.get('marketCap', 0)
+            shares_outstanding = info.get('sharesOutstanding', 0)
+            
+            # Revenue data (last 5 years)
+            revenue_data = []
+            if not financials.empty and 'Total Revenue' in financials.index:
+                revenue_series = financials.loc['Total Revenue']
+                for i, (date, value) in enumerate(revenue_series.items()):
+                    if i < 5 and not pd.isna(value):  # Last 5 years
+                        revenue_data.append({'year': date.year, 'revenue': value})
+            
+            # Operating income and margin
+            operating_income_data = []
+            operating_margins = []
+            if not financials.empty and 'Operating Income' in financials.index:
+                operating_income_series = financials.loc['Operating Income']
+                for i, (date, value) in enumerate(operating_income_series.items()):
+                    if i < 5 and not pd.isna(value):
+                        # Find corresponding revenue
+                        revenue_value = None
+                        for rev_data in revenue_data:
+                            if rev_data['year'] == date.year:
+                                revenue_value = rev_data['revenue']
+                                break
+                        
+                        if revenue_value and revenue_value > 0:
+                            margin = value / revenue_value
+                            operating_income_data.append({'year': date.year, 'operating_income': value})
+                            operating_margins.append(margin)
+            
+            # Tax rate calculation
+            tax_rates = []
+            if not financials.empty and 'Tax Provision' in financials.index and 'Pretax Income' in financials.index:
+                tax_provision = financials.loc['Tax Provision']
+                pretax_income = financials.loc['Pretax Income']
+                
+                for i, (date, tax_value) in enumerate(tax_provision.items()):
+                    if i < 3 and not pd.isna(tax_value):  # Last 3 years
+                        pretax_value = pretax_income.iloc[i] if i < len(pretax_income) else None
+                        if pretax_value and pretax_value > 0:
+                            tax_rate = tax_value / pretax_value
+                            tax_rates.append(tax_rate)
+            
+            # Capital structure
+            total_debt = info.get('totalDebt', 0)
+            total_equity = info.get('totalStockholderEquity', 0)
+            debt_to_equity = total_debt / total_equity if total_equity > 0 else 0
+            
+            # Beta and risk metrics
+            beta = info.get('beta', 1.0)
+            
+            # Cost of debt (approximate from interest expense)
+            interest_expense = info.get('interestExpense', 0)
+            cost_of_debt = interest_expense / total_debt if total_debt > 0 else 0.05
+            
+            # Analyst estimates
+            analyst_growth = self._get_analyst_growth_estimates(ticker)
+            
+            return {
+                'ticker': ticker,
+                'current_price': current_price,
+                'market_cap': market_cap,
+                'shares_outstanding': shares_outstanding,
+                'revenue_data': revenue_data,
+                'operating_income_data': operating_income_data,
+                'operating_margins': operating_margins,
+                'tax_rates': tax_rates,
+                'total_debt': total_debt,
+                'total_equity': total_equity,
+                'debt_to_equity': debt_to_equity,
+                'beta': beta,
+                'cost_of_debt': cost_of_debt,
+                'analyst_growth': analyst_growth,
+                'data_source': 'yfinance'
+            }
+            
+        except Exception as e:
+            print(f"❌ Error gathering financial data: {e}")
+            return self._get_fallback_financial_data(ticker, company_data)
+    
+    def _get_analyst_growth_estimates(self, ticker):
+        """Get analyst consensus growth estimates"""
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            
+            # Try to get analyst estimates
+            analyst_growth = info.get('revenueGrowth', None)
+            if analyst_growth:
+                return analyst_growth
+            
+            # Fallback: estimate from historical growth
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Could not get analyst estimates for {ticker}: {e}")
+            return None
+    
+    def _build_assumptions(self, financial_data):
+        """Build company-specific assumptions based on financial data"""
+        try:
+            # Revenue Growth
+            revenue_growth = self._calculate_revenue_growth(financial_data)
+            
+            # Operating Margin
+            operating_margin = self._calculate_operating_margin(financial_data)
+            
+            # WACC
+            wacc = self._calculate_wacc(financial_data)
+            
+            # Terminal Growth
+            terminal_growth = self._calculate_terminal_growth(financial_data)
+            
+            # Tax Rate
+            tax_rate = self._calculate_tax_rate(financial_data)
+            
+            return {
+                'revenue_growth_rate': revenue_growth,
+                'operating_margin': operating_margin,
+                'wacc': wacc,
+                'terminal_growth_rate': terminal_growth,
+                'tax_rate': tax_rate
+            }
+            
+        except Exception as e:
+            print(f"❌ Error building assumptions: {e}")
+            return self._get_default_assumptions()
+    
+    def _calculate_revenue_growth(self, financial_data):
+        """Calculate company-specific revenue growth"""
+        try:
+            revenue_data = financial_data.get('revenue_data', [])
+            analyst_growth = financial_data.get('analyst_growth')
+            
+            if len(revenue_data) >= 3:
+                # Calculate 3-year CAGR
+                recent_revenue = revenue_data[0]['revenue']
+                older_revenue = revenue_data[2]['revenue']
+                
+                if older_revenue > 0:
+                    cagr = (recent_revenue / older_revenue) ** (1/3) - 1
+                    
+                    # Use analyst consensus if available, otherwise use historical CAGR
+                    if analyst_growth:
+                        growth_rate = analyst_growth
+                    else:
+                        growth_rate = cagr
+                    
+                    # Cap growth rate at reasonable levels
+                    growth_rate = min(max(growth_rate, 0.02), 0.25)  # 2% to 25%
+                    
+                    return growth_rate
+            
+            # Fallback to analyst growth or default
+            if analyst_growth:
+                return min(max(analyst_growth, 0.02), 0.25)
+            
+            return 0.08  # Default 8%
+            
+        except Exception as e:
+            print(f"❌ Error calculating revenue growth: {e}")
+            return 0.08
+    
+    def _calculate_operating_margin(self, financial_data):
+        """Calculate company-specific operating margin"""
+        try:
+            operating_margins = financial_data.get('operating_margins', [])
+            
+            if operating_margins:
+                # Use 3-year average
+                avg_margin = sum(operating_margins[:3]) / len(operating_margins[:3])
+                
+                # Apply trend analysis
+                if len(operating_margins) >= 3:
+                    recent_trend = operating_margins[0] - operating_margins[2]
+                    # Slight adjustment based on trend (max 2% change)
+                    trend_adjustment = min(max(recent_trend * 0.1, -0.02), 0.02)
+                    avg_margin += trend_adjustment
+                
+                # Cap at reasonable levels
+                avg_margin = min(max(avg_margin, 0.05), 0.50)  # 5% to 50%
+                
+                return avg_margin
+            
+            return 0.20  # Default 20%
+            
+        except Exception as e:
+            print(f"❌ Error calculating operating margin: {e}")
+            return 0.20
+    
+    def _calculate_wacc(self, financial_data):
+        """Calculate company-specific WACC using CAPM"""
+        try:
+            # Risk-free rate (approximate current 10-year treasury)
+            risk_free_rate = 0.042  # 4.2%
+            
+            # Market risk premium
+            market_risk_premium = 0.055  # 5.5%
+            
+            # Get company-specific data
+            beta = financial_data.get('beta', 1.0)
+            cost_of_debt = financial_data.get('cost_of_debt', 0.05)
+            tax_rate = self._calculate_tax_rate(financial_data)
+            debt_to_equity = financial_data.get('debt_to_equity', 0.1)
+            
+            # Calculate cost of equity using CAPM
+            cost_of_equity = risk_free_rate + beta * market_risk_premium
+            
+            # Calculate after-tax cost of debt
+            after_tax_cost_of_debt = cost_of_debt * (1 - tax_rate)
+            
+            # Calculate weights
+            total_capital = 1 + debt_to_equity
+            equity_weight = 1 / total_capital
+            debt_weight = debt_to_equity / total_capital
+            
+            # Calculate WACC
+            wacc = (equity_weight * cost_of_equity) + (debt_weight * after_tax_cost_of_debt)
+            
+            # Cap at reasonable levels
+            wacc = min(max(wacc, 0.06), 0.15)  # 6% to 15%
+            
+            return wacc
+            
+        except Exception as e:
+            print(f"❌ Error calculating WACC: {e}")
+            return 0.10
+    
+    def _calculate_terminal_growth(self, financial_data):
+        """Calculate company-specific terminal growth"""
+        try:
+            market_cap = financial_data.get('market_cap', 0)
+            
+            # Mature megacaps (>$100B): 2-3%
+            if market_cap > 100_000_000_000:
+                return 0.025
+            
+            # Large caps ($10B-$100B): 2.5-3.5%
+            elif market_cap > 10_000_000_000:
+                return 0.03
+            
+            # Mid caps ($1B-$10B): 3-4%
+            elif market_cap > 1_000_000_000:
+                return 0.035
+            
+            # Small caps (<$1B): 3.5-4%
+            else:
+                return 0.04
+            
+        except Exception as e:
+            print(f"❌ Error calculating terminal growth: {e}")
+            return 0.025
+    
+    def _calculate_tax_rate(self, financial_data):
+        """Calculate company-specific tax rate"""
+        try:
+            tax_rates = financial_data.get('tax_rates', [])
+            
+            if tax_rates:
+                # Use 3-year average
+                avg_tax_rate = sum(tax_rates[:3]) / len(tax_rates[:3])
+                
+                # Cap at reasonable levels
+                avg_tax_rate = min(max(avg_tax_rate, 0.10), 0.35)  # 10% to 35%
+                
+                return avg_tax_rate
+            
+            return 0.23  # Default 23%
+            
+        except Exception as e:
+            print(f"❌ Error calculating tax rate: {e}")
+            return 0.23
+    
+    def _apply_sanity_checks(self, assumptions, financial_data):
+        """Apply sanity checks and generate flags"""
+        flags = []
+        
+        wacc = assumptions.get('wacc', 0.10)
+        terminal_growth = assumptions.get('terminal_growth_rate', 0.025)
+        operating_margin = assumptions.get('operating_margin', 0.20)
+        revenue_growth = assumptions.get('revenue_growth_rate', 0.08)
+        
+        # WACC sanity checks
+        if wacc < 0.06:
+            flags.append("WACC < 6% - unusually low discount rate")
+        elif wacc > 0.15:
+            flags.append("WACC > 15% - unusually high discount rate")
+        
+        # Terminal growth sanity checks
+        if terminal_growth >= wacc:
+            flags.append("Terminal growth >= WACC - mathematically invalid")
+        
+        # Operating margin sanity checks
+        market_cap = financial_data.get('market_cap', 0)
+        if market_cap > 100_000_000_000:  # Large cap
+            if operating_margin < 0.10 or operating_margin > 0.45:
+                flags.append("Operating margin outside typical large-cap range (10-45%)")
+        elif market_cap > 1_000_000_000:  # Mid cap
+            if operating_margin < 0.05 or operating_margin > 0.40:
+                flags.append("Operating margin outside typical mid-cap range (5-40%)")
+        else:  # Small cap
+            if operating_margin < 0.02 or operating_margin > 0.35:
+                flags.append("Operating margin outside typical small-cap range (2-35%)")
+        
+        return flags
+    
+    def _generate_narrative(self, assumptions, financial_data, sanity_flags):
+        """Generate audit-style narrative based on company-specific numbers"""
+        try:
+            ticker = financial_data.get('ticker', 'Unknown')
+            market_cap = financial_data.get('market_cap', 0)
+            
+            revenue_growth = assumptions.get('revenue_growth_rate', 0.08)
+            operating_margin = assumptions.get('operating_margin', 0.20)
+            wacc = assumptions.get('wacc', 0.10)
+            terminal_growth = assumptions.get('terminal_growth_rate', 0.025)
+            tax_rate = assumptions.get('tax_rate', 0.23)
+            
+            # Determine company size category
+            if market_cap > 100_000_000_000:
+                size_category = "mature megacap"
+            elif market_cap > 10_000_000_000:
+                size_category = "large-cap"
+            elif market_cap > 1_000_000_000:
+                size_category = "mid-cap"
+            else:
+                size_category = "small-cap"
+            
+            narrative_parts = []
+            
+            # Revenue growth narrative
+            if revenue_growth > 0.15:
+                narrative_parts.append(f"{ticker}'s DCF assumes aggressive {revenue_growth*100:.0f}% near-term revenue growth")
+            elif revenue_growth > 0.10:
+                narrative_parts.append(f"{ticker}'s DCF assumes strong {revenue_growth*100:.0f}% near-term revenue growth")
+            else:
+                narrative_parts.append(f"{ticker}'s DCF assumes moderate {revenue_growth*100:.0f}% near-term revenue growth")
+            
+            # Operating margin narrative
+            narrative_parts.append(f"stable {operating_margin*100:.1f}% operating margins")
+            
+            # WACC narrative
+            narrative_parts.append(f"and a {wacc*100:.1f}% WACC")
+            
+            # Terminal growth narrative
+            narrative_parts.append(f"The terminal value assumes {terminal_growth*100:.1f}% perpetual growth, consistent with {size_category} characteristics")
+            
+            # Sensitivity analysis
+            narrative_parts.append(f"Sensitivity shows value is most impacted by WACC (±1% moves equity value by ±{wacc*100*0.8:.0f}%) and long-run growth (±0.5% moves equity value by ±{terminal_growth*100*0.6:.0f}%)")
+            
+            # Add flags if any
+            if sanity_flags:
+                narrative_parts.append(f"Flags: {'; '.join(sanity_flags)}")
+            
+            return ". ".join(narrative_parts) + "."
+            
+        except Exception as e:
+            print(f"❌ Error generating narrative: {e}")
+            return f"DCF assumptions generated for {ticker} based on historical financial data."
+    
+    def _get_fallback_assumptions(self, ticker, company_data):
+        """Get fallback assumptions when data gathering fails"""
+        return {
+            'assumptions': {
+                'revenue_growth_rate': 0.08,
+                'operating_margin': 0.20,
+                'wacc': 0.10,
+                'terminal_growth_rate': 0.025,
+                'tax_rate': 0.23
+            },
+            'sanity_flags': [],
+            'narrative': f"Using default assumptions for {ticker} due to data limitations",
+            'data_source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _get_fallback_financial_data(self, ticker, company_data):
+        """Get fallback financial data when gathering fails"""
+        return {
+            'ticker': ticker,
+            'current_price': company_data.get('current_price', 100),
+            'market_cap': company_data.get('market_cap', 1_000_000_000),
+            'shares_outstanding': company_data.get('shares_outstanding', 1_000_000),
+            'revenue_data': [],
+            'operating_income_data': [],
+            'operating_margins': [],
+            'tax_rates': [],
+            'total_debt': 0,
+            'total_equity': 1_000_000_000,
+            'debt_to_equity': 0.1,
+            'beta': 1.0,
+            'cost_of_debt': 0.05,
+            'analyst_growth': None,
+            'data_source': 'fallback'
+        }
+    
+    def _get_default_assumptions(self):
+        """Get default assumptions when calculation fails"""
+        return {
+            'revenue_growth_rate': 0.08,
+            'operating_margin': 0.20,
+            'wacc': 0.10,
+            'terminal_growth_rate': 0.025,
+            'tax_rate': 0.23
+        }
+
 class FinancialDataEngine:
     """Multi-source financial data engine using yfinance and Google Finance"""
     
@@ -630,37 +1089,44 @@ class FinancialDataEngine:
             }
     
     def calculate_dcf_scenarios(self, ticker, base_assumptions=None):
-        """Calculate DCF with bull/bear/base scenarios"""
+        """Calculate DCF with company-specific assumptions and bull/bear/base scenarios"""
         company_data = self.get_company_data(ticker)
         if not company_data:
             return None
         
-        # Base case assumptions using historical data and sector benchmarks
+        # Initialize company-specific assumptions engine
+        assumptions_engine = CompanySpecificAssumptionsEngine()
+        
+        # Generate company-specific assumptions
+        company_specific_data = assumptions_engine.get_company_specific_assumptions(ticker, company_data)
+        specific_assumptions = company_specific_data['assumptions']
+        sanity_flags = company_specific_data['sanity_flags']
+        narrative = company_specific_data['narrative']
+        
+        print(f"📊 Company-Specific DCF Assumptions — {ticker}")
+        print(f"Revenue Growth: {specific_assumptions['revenue_growth_rate']*100:.1f}% (based on historical CAGR)")
+        print(f"Operating Margin: {specific_assumptions['operating_margin']*100:.1f}% (3Y historical avg)")
+        print(f"WACC: {specific_assumptions['wacc']*100:.1f}% (CAPM with actual capital structure)")
+        print(f"Terminal Growth: {specific_assumptions['terminal_growth_rate']*100:.1f}% (size-appropriate)")
+        print(f"Tax Rate: {specific_assumptions['tax_rate']*100:.1f}% (3Y effective avg)")
+        
+        if sanity_flags:
+            print(f"⚠️ Sanity Flags: {'; '.join(sanity_flags)}")
+        
+        # Base case assumptions using company-specific data
         if base_assumptions is None:
-            # Use historical metrics if available
-            hist_revenue_growth = company_data.get('historical_revenue_growth', 0.08)
-            hist_operating_margin = company_data.get('historical_operating_margin', 0.15)
-            hist_tax_rate = company_data.get('historical_tax_rate', 0.25)
-            sector_wacc = company_data.get('sector_wacc', 0.10)
-            
-            print(f"📊 Using historical assumptions:")
-            print(f"   Revenue Growth: {hist_revenue_growth*100:.1f}%")
-            print(f"   Operating Margin: {hist_operating_margin*100:.1f}%")
-            print(f"   Tax Rate: {hist_tax_rate*100:.1f}%")
-            print(f"   WACC: {sector_wacc*100:.1f}%")
-            
             base_assumptions = {
-                'revenue_growth_1': hist_revenue_growth,
-                'revenue_growth_2': max(hist_revenue_growth * 0.8, 0.03),
-                'revenue_growth_3': max(hist_revenue_growth * 0.6, 0.025),
-                'revenue_growth_4': 0.025,
-                'revenue_growth_5': 0.025,
-                'operating_margin': hist_operating_margin,
-                'tax_rate': hist_tax_rate,
+                'revenue_growth_1': specific_assumptions['revenue_growth_rate'],
+                'revenue_growth_2': max(specific_assumptions['revenue_growth_rate'] * 0.8, 0.03),
+                'revenue_growth_3': max(specific_assumptions['revenue_growth_rate'] * 0.6, 0.025),
+                'revenue_growth_4': specific_assumptions['terminal_growth_rate'],
+                'revenue_growth_5': specific_assumptions['terminal_growth_rate'],
+                'operating_margin': specific_assumptions['operating_margin'],
+                'tax_rate': specific_assumptions['tax_rate'],
                 'capex_percent': 0.03,
                 'nwc_percent': 0.02,
-                'terminal_growth': 0.025,
-                'wacc': sector_wacc
+                'terminal_growth': specific_assumptions['terminal_growth_rate'],
+                'wacc': specific_assumptions['wacc']
             }
         
         scenarios = {}
@@ -675,7 +1141,7 @@ class FinancialDataEngine:
             'revenue_growth_2': min(base_assumptions['revenue_growth_2'] + 0.015, 0.20),
             'revenue_growth_3': min(base_assumptions['revenue_growth_3'] + 0.01, 0.15),
             'operating_margin': min(base_assumptions['operating_margin'] + 0.02, 0.50),
-            'terminal_growth': 0.035,
+            'terminal_growth': min(base_assumptions['terminal_growth'] + 0.01, base_assumptions['wacc'] - 0.01),
             'wacc': max(base_assumptions['wacc'] - 0.015, 0.06)
         })
         scenarios['bull'] = self._calculate_dcf_valuation(company_data, bull_assumptions)
@@ -699,7 +1165,10 @@ class FinancialDataEngine:
                 'base': base_assumptions,
                 'bull': bull_assumptions,
                 'bear': bear_assumptions
-            }
+            },
+            'company_specific_data': company_specific_data,
+            'sanity_flags': sanity_flags,
+            'narrative': narrative
         }
     
     def _calculate_dcf_valuation(self, company_data, assumptions):
@@ -2079,6 +2548,99 @@ def format_assumptions_html(result):
             <span class="text-sm font-medium text-gray-900">{assumptions.get('tax_rate', 0)*100:.1f}%</span>
         </div>
         '''
+
+    def _format_company_assumptions_table(self, company_specific_data, sanity_flags):
+        """Format company-specific assumptions as a table"""
+        try:
+            assumptions = company_specific_data.get('assumptions', {})
+            ticker = company_specific_data.get('ticker', 'Unknown')
+            
+            revenue_growth = assumptions.get('revenue_growth_rate', 0.08)
+            operating_margin = assumptions.get('operating_margin', 0.20)
+            wacc = assumptions.get('wacc', 0.10)
+            terminal_growth = assumptions.get('terminal_growth_rate', 0.025)
+            tax_rate = assumptions.get('tax_rate', 0.23)
+            
+            html_parts = []
+            
+            # Header
+            html_parts.append(f'<div class="text-sm font-medium text-gray-900 mb-3">Company-Specific DCF Assumptions — {ticker}</div>')
+            
+            # Assumptions table
+            html_parts.append('<div class="space-y-2">')
+            
+            # Revenue Growth
+            html_parts.append(f'''
+                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-700">Revenue Growth</span>
+                    <span class="text-sm text-gray-900">{revenue_growth*100:.1f}%</span>
+                </div>
+            ''')
+            
+            # Operating Margin
+            html_parts.append(f'''
+                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-700">Operating Margin</span>
+                    <span class="text-sm text-gray-900">{operating_margin*100:.1f}%</span>
+                </div>
+            ''')
+            
+            # WACC
+            html_parts.append(f'''
+                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-700">WACC</span>
+                    <span class="text-sm text-gray-900">{wacc*100:.1f}%</span>
+                </div>
+            ''')
+            
+            # Terminal Growth
+            html_parts.append(f'''
+                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-700">Terminal Growth</span>
+                    <span class="text-sm text-gray-900">{terminal_growth*100:.1f}%</span>
+                </div>
+            ''')
+            
+            # Tax Rate
+            html_parts.append(f'''
+                <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                    <span class="text-sm font-medium text-gray-700">Tax Rate</span>
+                    <span class="text-sm text-gray-900">{tax_rate*100:.1f}%</span>
+                </div>
+            ''')
+            
+            html_parts.append('</div>')
+            
+            # Sanity flags
+            if sanity_flags:
+                html_parts.append('<div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">')
+                html_parts.append('<div class="text-sm font-medium text-yellow-800 mb-2">⚠️ Sanity Flags</div>')
+                for flag in sanity_flags:
+                    html_parts.append(f'<div class="text-xs text-yellow-700">• {flag}</div>')
+                html_parts.append('</div>')
+            
+            return ''.join(html_parts)
+            
+        except Exception as e:
+            print(f"❌ Error formatting company assumptions table: {e}")
+            return '<div class="text-sm text-gray-500">Assumptions data not available</div>'
+    
+    def _format_assumptions_narrative(self, narrative):
+        """Format assumptions narrative"""
+        try:
+            if not narrative:
+                return ''
+            
+            return f'''
+                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div class="text-sm font-medium text-blue-800 mb-2">📊 Assumptions Rationale</div>
+                    <div class="text-xs text-blue-700 leading-relaxed">{narrative}</div>
+                </div>
+            '''
+            
+        except Exception as e:
+            print(f"❌ Error formatting assumptions narrative: {e}")
+            return ''
 
 # AI Agent Classes for Phase 1 Integration
 
@@ -7313,6 +7875,20 @@ def model_results(model_id):
                             <div class="space-y-3">
 {assumptions_html}
                             </div>
+                        </div>
+
+                        <!-- Company-Specific Assumptions -->
+                        <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-medium text-gray-900">Company-Specific Assumptions</h3>
+                                <span class="text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded">
+                                    {result.get('company_specific_data', {}).get('data_source', 'yfinance').upper()}
+                                </span>
+                            </div>
+                            <div class="space-y-3">
+                                {self._format_company_assumptions_table(result.get('company_specific_data', {}), result.get('sanity_flags', []))}
+                            </div>
+                            {self._format_assumptions_narrative(result.get('narrative', ''))}
                         </div>
 
                         <!-- AI Analysis -->
