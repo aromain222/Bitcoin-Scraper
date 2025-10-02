@@ -24,6 +24,8 @@ from urllib.parse import quote
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
+import openai
+import anthropic
 
 # Create Flask app
 app = Flask(__name__)
@@ -2078,6 +2080,296 @@ def format_assumptions_html(result):
         </div>
         '''
 
+# AI Agent Classes for Phase 1 Integration
+
+class FinancialAIAgent:
+    """AI agent for financial analysis and model commentary"""
+    
+    def __init__(self):
+        self.openai_client = None
+        self.claude_client = None
+        self._initialize_clients()
+    
+    def _initialize_clients(self):
+        """Initialize AI clients with API keys"""
+        try:
+            # Initialize OpenAI client
+            openai_api_key = os.getenv('OPENAI_API_KEY')
+            if openai_api_key:
+                self.openai_client = openai.OpenAI(api_key=openai_api_key)
+                print("✅ OpenAI client initialized")
+            
+            # Initialize Claude client
+            claude_api_key = os.getenv('CLAUDE_API_KEY')
+            if claude_api_key:
+                self.claude_client = anthropic.Anthropic(api_key=claude_api_key)
+                print("✅ Claude client initialized")
+                
+        except Exception as e:
+            print(f"⚠️ AI client initialization failed: {e}")
+    
+    def analyze_dcf_model(self, company_data, dcf_results, scenarios=None):
+        """Generate AI analysis of DCF model results"""
+        try:
+            if not self.claude_client:
+                return self._fallback_analysis(company_data, dcf_results)
+            
+            prompt = self._build_dcf_analysis_prompt(company_data, dcf_results, scenarios)
+            
+            response = self.claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1500,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            return {
+                'analysis': response.content[0].text,
+                'source': 'claude',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ AI analysis failed: {e}")
+            return self._fallback_analysis(company_data, dcf_results)
+    
+    def validate_assumptions(self, company_data, assumptions):
+        """AI validation of DCF assumptions against historical data"""
+        try:
+            if not self.claude_client:
+                return self._fallback_assumption_validation(assumptions)
+            
+            prompt = self._build_assumption_validation_prompt(company_data, assumptions)
+            
+            response = self.claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            return {
+                'validation': response.content[0].text,
+                'source': 'claude',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ AI assumption validation failed: {e}")
+            return self._fallback_assumption_validation(assumptions)
+    
+    def chat_about_model(self, user_question, model_context):
+        """Interactive Q&A about the financial model"""
+        try:
+            if not self.claude_client:
+                return self._fallback_chat_response(user_question)
+            
+            prompt = self._build_chat_prompt(user_question, model_context)
+            
+            response = self.claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            return {
+                'response': response.content[0].text,
+                'source': 'claude',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ AI chat failed: {e}")
+            return self._fallback_chat_response(user_question)
+    
+    def _build_dcf_analysis_prompt(self, company_data, dcf_results, scenarios=None):
+        """Build comprehensive DCF analysis prompt"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        equity_value = dcf_results.get('equity_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        
+        prompt = f"""
+As a senior equity research analyst, provide a comprehensive investment analysis for {company_name} based on this DCF model:
+
+COMPANY OVERVIEW:
+- Company: {company_name}
+- Sector: {sector}
+- Market Cap: ${market_cap/1e9:.1f}B
+- Revenue: ${revenue/1e9:.1f}B
+- Operating Margin: {operating_margin*100:.1f}%
+
+DCF VALUATION RESULTS:
+- Enterprise Value: ${enterprise_value/1e9:.1f}B
+- Equity Value: ${equity_value/1e9:.1f}B
+- Implied Price: ${implied_price:.2f}
+- Current Price: ${current_price:.2f}
+- Upside/(Downside): {upside_downside:.1f}%
+
+Please provide:
+1. Investment thesis summary
+2. Key valuation drivers
+3. Risk factors to consider
+4. Recommendation (Buy/Hold/Sell) with reasoning
+5. Price target rationale
+
+Format your response professionally for an investment committee.
+"""
+        
+        if scenarios:
+            prompt += f"\n\nSCENARIO ANALYSIS:\n"
+            for scenario_name, scenario_data in scenarios.items():
+                ev = scenario_data.get('enterprise_value', 0)
+                price = scenario_data.get('implied_price', 0)
+                upside = scenario_data.get('upside_downside', 0)
+                prompt += f"- {scenario_name.upper()}: EV=${ev/1e9:.1f}B, Price=${price:.2f}, Upside={upside:.1f}%\n"
+        
+        return prompt
+    
+    def _build_assumption_validation_prompt(self, company_data, assumptions):
+        """Build assumption validation prompt"""
+        company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        historical_growth = company_data.get('historical_revenue_growth', 0)
+        current_margin = company_data.get('operating_margin', 0)
+        
+        revenue_growth = assumptions.get('revenue_growth_1', 0)
+        operating_margin = assumptions.get('operating_margin', 0)
+        wacc = assumptions.get('wacc', 0)
+        tax_rate = assumptions.get('tax_rate', 0)
+        terminal_growth = assumptions.get('terminal_growth', 0)
+        
+        prompt = f"""
+As a senior financial analyst, validate these DCF assumptions for {company_name} ({sector}):
+
+PROPOSED ASSUMPTIONS:
+- Revenue Growth (Y1): {revenue_growth*100:.1f}%
+- Operating Margin: {operating_margin*100:.1f}%
+- WACC: {wacc*100:.1f}%
+- Tax Rate: {tax_rate*100:.1f}%
+- Terminal Growth: {terminal_growth*100:.1f}%
+
+HISTORICAL CONTEXT:
+- 5Y Revenue CAGR: {historical_growth*100:.1f}%
+- Current Operating Margin: {current_margin*100:.1f}%
+- Sector: {sector}
+
+Please provide:
+1. Validation of each assumption with reasoning
+2. Suggested adjustments if needed
+3. Risk factors for each assumption
+4. Overall assessment of assumption reasonableness
+
+Be specific and reference industry benchmarks where applicable.
+"""
+        
+        return prompt
+    
+    def _build_chat_prompt(self, user_question, model_context):
+        """Build chat prompt for model Q&A"""
+        prompt = f"""
+User Question: {user_question}
+
+Model Context:
+{json.dumps(model_context, indent=2)}
+
+As a financial analyst, provide a clear, professional answer to the user's question about this financial model. 
+Be specific and reference the actual numbers from the model when relevant.
+"""
+        
+        return prompt
+    
+    def _fallback_analysis(self, company_data, dcf_results):
+        """Fallback analysis when AI is unavailable"""
+        company_name = company_data.get('company_name', 'Unknown')
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        
+        analysis = f"""
+**Investment Analysis for {company_name}**
+
+**Valuation Summary:**
+- Enterprise Value: ${enterprise_value/1e9:.1f}B
+- Implied Price: ${implied_price:.2f}
+- Current Price: ${current_price:.2f}
+- Upside/(Downside): {upside_downside:.1f}%
+
+**Key Considerations:**
+- Review assumptions for reasonableness
+- Consider market conditions and sector trends
+- Evaluate competitive positioning
+- Assess management execution track record
+
+*Note: This is a basic analysis. For detailed insights, AI analysis is currently unavailable.*
+"""
+        
+        return {
+            'analysis': analysis,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_assumption_validation(self, assumptions):
+        """Fallback assumption validation when AI is unavailable"""
+        revenue_growth = assumptions.get('revenue_growth_1', 0)
+        operating_margin = assumptions.get('operating_margin', 0)
+        wacc = assumptions.get('wacc', 0)
+        
+        validation = f"""
+**Assumption Validation Summary:**
+
+**Revenue Growth ({revenue_growth*100:.1f}%):**
+- Review historical growth patterns
+- Consider market saturation and competition
+- Assess new product/service launches
+
+**Operating Margin ({operating_margin*100:.1f}%):**
+- Compare to historical margins
+- Evaluate cost structure changes
+- Consider pricing power and efficiency gains
+
+**WACC ({wacc*100:.1f}%):**
+- Verify risk-free rate and market premium
+- Check beta calculation
+- Consider sector-specific risk factors
+
+*Note: This is a basic validation. For detailed analysis, AI validation is currently unavailable.*
+"""
+        
+        return {
+            'validation': validation,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_chat_response(self, user_question):
+        """Fallback chat response when AI is unavailable"""
+        response = f"""
+I understand you're asking: "{user_question}"
+
+Unfortunately, AI-powered analysis is currently unavailable. However, I can help you understand the financial model by examining the data directly.
+
+Please check the model results page for detailed financial metrics and assumptions. You can also download the Excel file for a comprehensive analysis.
+
+*Note: For interactive Q&A, AI chat is currently unavailable.*
+"""
+        
+        return {
+            'response': response,
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+
+# Initialize AI agent
+ai_agent = FinancialAIAgent()
+
 def generate_download_section(model):
     """Generate download section with proper states"""
     file_ready = model.get('file_ready', False)
@@ -2493,6 +2785,102 @@ def apply_assumptions():
             "error": "internal_error"
         }), 500
 
+# AI Chat API Endpoints
+
+@app.route('/api/ai/chat', methods=['POST'])
+def ai_chat():
+    """AI chat endpoint for model Q&A"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "error": "validation_error",
+                "message": "JSON body required"
+            }), 400
+        
+        model_id = data.get('model_id')
+        user_question = data.get('question', '').strip()
+        
+        if not model_id:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Model ID required"
+            }), 400
+        
+        if not user_question:
+            return jsonify({
+                "error": "validation_error",
+                "message": "Question required"
+            }), 400
+        
+        # Get model from storage
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        # Prepare model context for AI
+        model_context = {
+            'model_type': model.get('type'),
+            'ticker': model.get('ticker'),
+            'company_name': model.get('result', {}).get('company_name'),
+            'scenarios': model.get('result', {}).get('scenarios', {}),
+            'assumptions': model.get('result', {}).get('assumptions', {}),
+            'model_summary': model.get('result', {}).get('model_summary', {})
+        }
+        
+        # Get AI response
+        ai_response = ai_agent.chat_about_model(user_question, model_context)
+        
+        return jsonify({
+            "success": True,
+            "response": ai_response['response'],
+            "source": ai_response['source'],
+            "timestamp": ai_response['timestamp']
+        })
+        
+    except Exception as e:
+        print(f"Error in ai_chat: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "AI chat failed"
+        }), 500
+
+@app.route('/api/ai/analysis/<model_id>')
+def get_ai_analysis(model_id):
+    """Get AI analysis for a model"""
+    try:
+        model = MODEL_STORAGE.get(model_id)
+        if not model:
+            return jsonify({
+                "error": "not_found",
+                "message": "Model not found"
+            }), 404
+        
+        ai_analysis = model.get('ai_analysis')
+        ai_assumption_validation = model.get('ai_assumption_validation')
+        
+        if not ai_analysis and not ai_assumption_validation:
+            return jsonify({
+                "error": "not_available",
+                "message": "AI analysis not available for this model"
+            }), 404
+        
+        return jsonify({
+            "success": True,
+            "ai_analysis": ai_analysis,
+            "ai_assumption_validation": ai_assumption_validation
+        })
+        
+    except Exception as e:
+        print(f"Error in get_ai_analysis: {e}")
+        return jsonify({
+            "error": "internal_error",
+            "message": "Failed to get AI analysis"
+        }), 500
+
 @app.route('/download/<filename>')
 def download_file(filename):
     """Download Excel file from temp directory"""
@@ -2844,6 +3232,36 @@ def generate_model():
                     # Flash error to user
                     flash(f"Excel generation failed: {str(e)}", 'error')
             
+            # Generate AI analysis for the model
+            ai_analysis = None
+            ai_assumption_validation = None
+            
+            if model_result and model_type == 'dcf':
+                try:
+                    print(f"🤖 Generating AI analysis for {ticker}")
+                    
+                    # Get company data and DCF results for AI analysis
+                    company_data = model_result.get('company_data', {})
+                    scenarios = model_result.get('scenarios', {})
+                    assumptions = model_result.get('assumptions', {})
+                    
+                    # Use base scenario for analysis if available
+                    dcf_results = scenarios.get('base', model_result.get('model_summary', {}).get('valuation_outputs', {}))
+                    
+                    if company_data and dcf_results:
+                        # Generate AI model analysis
+                        ai_analysis = ai_agent.analyze_dcf_model(company_data, dcf_results, scenarios)
+                        print(f"✅ AI analysis generated for {ticker}")
+                        
+                        # Generate AI assumption validation
+                        if assumptions and 'base' in assumptions:
+                            ai_assumption_validation = ai_agent.validate_assumptions(company_data, assumptions['base'])
+                            print(f"✅ AI assumption validation generated for {ticker}")
+                    
+                except Exception as e:
+                    print(f"⚠️ AI analysis failed for {ticker}: {e}")
+                    # Continue without AI analysis - don't fail the entire model generation
+            
             MODEL_STORAGE[model_id] = {
                 'id': model_id,
                 'type': model_type,
@@ -2852,7 +3270,9 @@ def generate_model():
                 'timestamp': datetime.now().isoformat(),
                 'status': 'completed',
                 'excel_filename': excel_filename,
-                'file_ready': excel_filename is not None
+                'file_ready': excel_filename is not None,
+                'ai_analysis': ai_analysis,
+                'ai_assumption_validation': ai_assumption_validation
             }
             
             print(f"🎉 Model {model_id} created successfully for {ticker}")
@@ -3294,6 +3714,86 @@ def model_results(model_id):
 {assumptions_html}
                             </div>
                         </div>
+
+                        <!-- AI Analysis -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="font-medium text-gray-900">AI Analysis</h3>
+                            </div>
+                            
+                            <div id="ai-analysis-content">
+                                <div class="text-sm text-gray-600 mb-4">
+                                    <p>🤖 AI-powered investment analysis and assumption validation</p>
+                                </div>
+                                
+                                <div id="ai-analysis-loading" class="hidden">
+                                    <div class="flex items-center justify-center py-4">
+                                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                        <span class="ml-2 text-sm text-gray-600">Loading AI analysis...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="ai-analysis-results" class="hidden">
+                                    <div class="space-y-4">
+                                        <div id="ai-model-analysis" class="hidden">
+                                            <h4 class="font-medium text-gray-900 mb-2">Investment Analysis</h4>
+                                            <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-line" id="ai-analysis-text"></div>
+                                        </div>
+                                        
+                                        <div id="ai-assumption-validation" class="hidden">
+                                            <h4 class="font-medium text-gray-900 mb-2">Assumption Validation</h4>
+                                            <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-line" id="ai-validation-text"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="ai-analysis-error" class="hidden">
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                                        <p class="text-sm text-red-600">AI analysis is currently unavailable. Please try again later.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Chat -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                            <div class="flex items-center mb-4">
+                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="font-medium text-gray-900">Ask AI About This Model</h3>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="flex space-x-2">
+                                    <input type="text" id="chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <button id="chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                        Send
+                                    </button>
+                                </div>
+                                
+                                <div id="chat-messages" class="space-y-3 max-h-64 overflow-y-auto">
+                                    <div class="text-sm text-gray-500 text-center py-2">
+                                        Ask me anything about this financial model!
+                                    </div>
+                                </div>
+                                
+                                <div id="chat-loading" class="hidden">
+                                    <div class="flex items-center justify-center py-2">
+                                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                        <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3326,6 +3826,127 @@ def model_results(model_id):
                 </div>
             </div>
         </div>
+
+        <script>
+            // AI Analysis and Chat Functionality
+            document.addEventListener('DOMContentLoaded', function() {{
+                const modelId = '{model_id}';
+                
+                // Load AI analysis on page load
+                loadAIAnalysis(modelId);
+                
+                // Setup chat functionality
+                setupChat(modelId);
+            }});
+            
+            async function loadAIAnalysis(modelId) {{
+                const loadingEl = document.getElementById('ai-analysis-loading');
+                const resultsEl = document.getElementById('ai-analysis-results');
+                const errorEl = document.getElementById('ai-analysis-error');
+                
+                try {{
+                    loadingEl.classList.remove('hidden');
+                    
+                    const response = await fetch(`/api/ai/analysis/${{modelId}}`);
+                    const data = await response.json();
+                    
+                    loadingEl.classList.add('hidden');
+                    
+                    if (data.success) {{
+                        resultsEl.classList.remove('hidden');
+                        
+                        // Display AI model analysis
+                        if (data.ai_analysis && data.ai_analysis.analysis) {{
+                            const analysisEl = document.getElementById('ai-model-analysis');
+                            const analysisTextEl = document.getElementById('ai-analysis-text');
+                            analysisTextEl.textContent = data.ai_analysis.analysis;
+                            analysisEl.classList.remove('hidden');
+                        }}
+                        
+                        // Display AI assumption validation
+                        if (data.ai_assumption_validation && data.ai_assumption_validation.validation) {{
+                            const validationEl = document.getElementById('ai-assumption-validation');
+                            const validationTextEl = document.getElementById('ai-validation-text');
+                            validationTextEl.textContent = data.ai_assumption_validation.validation;
+                            validationEl.classList.remove('hidden');
+                        }}
+                    }} else {{
+                        errorEl.classList.remove('hidden');
+                    }}
+                }} catch (error) {{
+                    console.error('Error loading AI analysis:', error);
+                    loadingEl.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
+                }}
+            }}
+            
+            function setupChat(modelId) {{
+                const chatInput = document.getElementById('chat-input');
+                const chatSend = document.getElementById('chat-send');
+                const chatMessages = document.getElementById('chat-messages');
+                const chatLoading = document.getElementById('chat-loading');
+                
+                function addMessage(content, isUser = false) {{
+                    const messageEl = document.createElement('div');
+                    messageEl.className = `flex ${{isUser ? 'justify-end' : 'justify-start'}}`;
+                    
+                    const bubbleEl = document.createElement('div');
+                    bubbleEl.className = `max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm ${{isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}}`;
+                    bubbleEl.textContent = content;
+                    
+                    messageEl.appendChild(bubbleEl);
+                    chatMessages.appendChild(messageEl);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }}
+                
+                async function sendMessage() {{
+                    const question = chatInput.value.trim();
+                    if (!question) return;
+                    
+                    // Add user message
+                    addMessage(question, true);
+                    chatInput.value = '';
+                    
+                    // Show loading
+                    chatLoading.classList.remove('hidden');
+                    
+                    try {{
+                        const response = await fetch('/api/ai/chat', {{
+                            method: 'POST',
+                            headers: {{
+                                'Content-Type': 'application/json',
+                            }},
+                            body: JSON.stringify({{
+                                model_id: modelId,
+                                question: question
+                            }})
+                        }});
+                        
+                        const data = await response.json();
+                        
+                        chatLoading.classList.add('hidden');
+                        
+                        if (data.success) {{
+                            addMessage(data.response);
+                        }} else {{
+                            addMessage('Sorry, I encountered an error. Please try again.');
+                        }}
+                    }} catch (error) {{
+                        console.error('Chat error:', error);
+                        chatLoading.classList.add('hidden');
+                        addMessage('Sorry, I encountered an error. Please try again.');
+                    }}
+                }}
+                
+                // Event listeners
+                chatSend.addEventListener('click', sendMessage);
+                chatInput.addEventListener('keypress', function(e) {{
+                    if (e.key === 'Enter') {{
+                        sendMessage();
+                    }}
+                }});
+            }}
+        </script>
     </body>
     </html>
     '''
