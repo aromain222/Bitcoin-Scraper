@@ -1851,9 +1851,15 @@ def generate_valuation_html(result):
         '''
         
     else:
-        # Single scenario - just show the metrics
-        valuation_data = result.get('model_summary', {}).get('valuation_outputs', {})
-        html = _generate_metrics_grid(valuation_data, 'base')
+        # Single scenario - try to get data from scenarios first, then model_summary
+        if scenarios:
+            # Use the first (and only) scenario
+            scenario_name, valuation_data = next(iter(scenarios.items()))
+            html = _generate_metrics_grid(valuation_data, scenario_name)
+        else:
+            # Fallback to model_summary
+            valuation_data = result.get('model_summary', {}).get('valuation_outputs', {})
+            html = _generate_metrics_grid(valuation_data, 'base')
     
     return html
 
@@ -1861,14 +1867,14 @@ def _generate_metrics_grid(data, scenario_name='base'):
     """Generate metrics grid for a single scenario"""
     
     # Handle different data structures
-    if isinstance(data, dict):
+    if isinstance(data, dict) and data:
         enterprise_value = data.get('enterprise_value', 0)
         equity_value = data.get('equity_value', 0)
         implied_price = data.get('implied_price', 0)
         current_price = data.get('current_price', 0)
         upside_downside = data.get('upside_downside', 0)
     else:
-        # Fallback values
+        # Fallback values - this should rarely happen now
         enterprise_value = equity_value = implied_price = current_price = upside_downside = 0
     
     # Color scheme based on scenario
@@ -2650,6 +2656,28 @@ def generate_model():
                 print(f"📋 Using mock data for {model_type} model")
                 processing_time = (datetime.now() - start_time).total_seconds()
                 
+                # Generate company-specific mock data based on ticker
+                ticker_hash = hash(ticker.upper()) % 1000
+                base_enterprise_value = 500000000000 + (ticker_hash * 1000000000)  # 500B to 1.5T range
+                base_current_price = 50 + (ticker_hash * 0.2)  # $50 to $250 range
+                
+                # Create realistic mock scenarios
+                mock_scenarios = {}
+                for scenario_name, multiplier in [('bear', 0.7), ('base', 1.0), ('bull', 1.4)]:
+                    enterprise_value = base_enterprise_value * multiplier
+                    equity_value = enterprise_value * 0.9  # Assume some net debt
+                    implied_price = base_current_price * multiplier
+                    current_price = base_current_price
+                    upside_downside = ((implied_price / current_price) - 1) * 100
+                    
+                    mock_scenarios[scenario_name] = {
+                        'enterprise_value': enterprise_value,
+                        'equity_value': equity_value,
+                        'implied_price': implied_price,
+                        'current_price': current_price,
+                        'upside_downside': upside_downside
+                    }
+                
                 model_result = {
                     'model_type': model_type,
                     'ticker': ticker,
@@ -2658,20 +2686,15 @@ def generate_model():
                     'processing_time_seconds': round(processing_time, 2),
                     'use_market_data': use_market_data,
                     'scenario_type': scenario,
+                    'scenarios': mock_scenarios,
                     'model_summary': {
                         'key_assumptions': {
-                            'revenue_growth_rate': 0.12,
-                            'wacc': 0.095,
+                            'revenue_growth_rate': 0.08 + (ticker_hash * 0.0001),
+                            'wacc': 0.08 + (ticker_hash * 0.00005),
                             'terminal_growth_rate': 0.025,
-                            'operating_margin': 0.25
+                            'operating_margin': 0.20 + (ticker_hash * 0.0002)
                         },
-                        'valuation_outputs': {
-                            'enterprise_value': 850000000000,
-                            'equity_value': 800000000000,
-                            'implied_price': 165.50,
-                            'current_price': 150.00,
-                            'upside_downside': 10.33
-                        }
+                        'valuation_outputs': mock_scenarios['base']
                     }
                 }
             
