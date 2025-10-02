@@ -5998,15 +5998,62 @@ def generate_model():
                         'upside_downside': upside_downside
                     }
                 
+                # Create realistic mock company data
+                mock_company_data = {
+                    'ticker': ticker,
+                    'company_name': f"{ticker} Corporation",
+                    'sector': 'Technology',
+                    'industry': 'Software',
+                    'market_cap': base_enterprise_value * 0.9,  # Slightly less than enterprise value
+                    'enterprise_value': base_enterprise_value,
+                    'current_price': base_current_price,
+                    'shares_outstanding': 1000000000,  # 1B shares
+                    'beta': 1.0 + (ticker_hash * 0.001),
+                    'pe_ratio': 20 + (ticker_hash * 0.01),
+                    'forward_pe': 18 + (ticker_hash * 0.01),
+                    'peg_ratio': 1.5 + (ticker_hash * 0.001),
+                    'price_to_book': 3.0 + (ticker_hash * 0.01),
+                    'debt_to_equity': 0.3 + (ticker_hash * 0.001),
+                    'return_on_equity': 0.15 + (ticker_hash * 0.001),
+                    'return_on_assets': 0.10 + (ticker_hash * 0.001),
+                    'profit_margin': 0.20 + (ticker_hash * 0.0002),
+                    'operating_margin': 0.25 + (ticker_hash * 0.0002),
+                    'revenue_growth': 0.08 + (ticker_hash * 0.0001),
+                    'earnings_growth': 0.12 + (ticker_hash * 0.0001),
+                    'free_cash_flow': base_enterprise_value * 0.1,  # 10% of enterprise value
+                    'total_cash': base_enterprise_value * 0.05,  # 5% of enterprise value
+                    'total_debt': base_enterprise_value * 0.1,  # 10% of enterprise value
+                    'book_value': base_enterprise_value * 0.3,  # 30% of enterprise value
+                    'dividend_yield': 0.02 + (ticker_hash * 0.0001),
+                    'payout_ratio': 0.3 + (ticker_hash * 0.001),
+                    'revenue': base_enterprise_value * 0.8,  # Revenue roughly 80% of enterprise value
+                    'gross_profit': base_enterprise_value * 0.6,  # Gross profit 60% of enterprise value
+                    'operating_income': base_enterprise_value * 0.2,  # Operating income 20% of enterprise value
+                    'net_income': base_enterprise_value * 0.15,  # Net income 15% of enterprise value
+                    'ebitda': base_enterprise_value * 0.25,  # EBITDA 25% of enterprise value
+                    'data_sources': ['mock_data']
+                }
+                
                 model_result = {
                     'model_type': model_type,
                     'ticker': ticker,
                     'status': 'completed',
                     'company_name': f"{ticker} Corporation",
+                    'sector': mock_company_data['sector'],
+                    'industry': mock_company_data['industry'],
                     'processing_time_seconds': round(processing_time, 2),
                     'use_market_data': use_market_data,
                     'scenario_type': scenario,
+                    'company_data': mock_company_data,
                     'scenarios': mock_scenarios,
+                    'assumptions': {
+                        'base': {
+                            'revenue_growth_rate': 0.08 + (ticker_hash * 0.0001),
+                            'wacc': 0.08 + (ticker_hash * 0.00005),
+                            'terminal_growth_rate': 0.025,
+                            'operating_margin': 0.20 + (ticker_hash * 0.0002)
+                        }
+                    },
                     'model_summary': {
                         'key_assumptions': {
                             'revenue_growth_rate': 0.08 + (ticker_hash * 0.0001),
