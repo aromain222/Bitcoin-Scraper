@@ -3606,18 +3606,9 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         # Generate comprehensive analysis
         analysis_parts = []
         
-        # Company Overview
+        # Valuation Results
         analysis_parts.append(f"COMPREHENSIVE DCF INVESTMENT ANALYSIS FOR {company_name.upper()}")
         analysis_parts.append("")
-        analysis_parts.append("COMPANY OVERVIEW:")
-        analysis_parts.append(f"Company: {company_name}")
-        analysis_parts.append(f"Sector: {sector}")
-        analysis_parts.append(f"Market Cap: ${market_cap/1e9:.1f}B")
-        analysis_parts.append(f"Revenue: ${revenue/1e9:.1f}B")
-        analysis_parts.append(f"Operating Margin: {operating_margin*100:.1f}%")
-        analysis_parts.append("")
-        
-        # Valuation Results
         analysis_parts.append("DCF VALUATION RESULTS:")
         analysis_parts.append(f"Enterprise Value: ${enterprise_value/1e9:.1f}B")
         analysis_parts.append(f"Implied Price: ${implied_price:.2f}")
@@ -3701,11 +3692,109 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         analysis_parts.append("")
         
         # Market Context
-        analysis_parts.append("MARKET CONTEXT:")
-        analysis_parts.append("DCF models sensitive to interest rate and growth assumptions")
-        analysis_parts.append("Current market conditions favor quality companies with strong fundamentals")
-        analysis_parts.append("Sector rotation and market sentiment impact short-term performance")
-        analysis_parts.append("Long-term value creation depends on operational execution")
+        analysis_parts.append("MARKET CONTEXT & STRATEGIC INSIGHTS:")
+        
+        # Sector-specific insights
+        if sector == 'Technology':
+            analysis_parts.append("Technology Sector Dynamics:")
+            analysis_parts.append("- High growth potential but significant volatility and disruption risk")
+            analysis_parts.append("- Innovation cycles drive rapid obsolescence and market share shifts")
+            analysis_parts.append("- Regulatory scrutiny increasing on data privacy and antitrust")
+            analysis_parts.append("- Cloud computing and AI driving new revenue streams")
+        elif sector == 'Healthcare':
+            analysis_parts.append("Healthcare Sector Dynamics:")
+            analysis_parts.append("- Defensive characteristics with demographic tailwinds")
+            analysis_parts.append("- Regulatory approval cycles create significant timing risks")
+            analysis_parts.append("- Patent cliffs and generic competition pressure margins")
+            analysis_parts.append("- Aging population and chronic disease prevalence support growth")
+        elif sector == 'Financial Services':
+            analysis_parts.append("Financial Services Sector Dynamics:")
+            analysis_parts.append("- Interest rate sensitivity affects net interest margins")
+            analysis_parts.append("- Regulatory capital requirements constrain returns")
+            analysis_parts.append("- Digital transformation disrupting traditional banking models")
+            analysis_parts.append("- Economic cycles drive credit quality and loan demand")
+        elif sector == 'Consumer Discretionary':
+            analysis_parts.append("Consumer Discretionary Sector Dynamics:")
+            analysis_parts.append("- Economic sensitivity drives cyclical performance")
+            analysis_parts.append("- E-commerce disruption reshaping retail landscape")
+            analysis_parts.append("- Brand strength and pricing power critical for margins")
+            analysis_parts.append("- Consumer spending patterns shift with economic conditions")
+        elif sector == 'Energy':
+            analysis_parts.append("Energy Sector Dynamics:")
+            analysis_parts.append("- Commodity price volatility drives earnings uncertainty")
+            analysis_parts.append("- ESG pressures accelerating transition to renewables")
+            analysis_parts.append("- Geopolitical risks affect supply chains and pricing")
+            analysis_parts.append("- Capital intensity requires disciplined investment allocation")
+        else:
+            analysis_parts.append("Sector-Specific Considerations:")
+            analysis_parts.append("- Industry-specific regulatory and competitive dynamics")
+            analysis_parts.append("- Economic cycle sensitivity varies by subsector")
+            analysis_parts.append("- Technology disruption affecting traditional business models")
+            analysis_parts.append("- ESG factors increasingly influencing valuations")
+        
+        analysis_parts.append("")
+        
+        # Market cap-based insights
+        if market_cap > 200000000000:  # > $200B
+            analysis_parts.append("Large-Cap Market Position:")
+            analysis_parts.append("- Institutional ownership provides stability but limits upside")
+            analysis_parts.append("- Market leadership position offers competitive moats")
+            analysis_parts.append("- Regulatory scrutiny increases with market dominance")
+            analysis_parts.append("- Dividend policies and capital allocation under scrutiny")
+        elif market_cap > 10000000000:  # > $10B
+            analysis_parts.append("Mid-Cap Market Position:")
+            analysis_parts.append("- Growth potential balanced with operational maturity")
+            analysis_parts.append("- Institutional interest increasing but liquidity constraints")
+            analysis_parts.append("- Acquisition targets for larger players")
+            analysis_parts.append("- Management execution critical for value creation")
+        else:  # < $10B
+            analysis_parts.append("Small-Cap Market Position:")
+            analysis_parts.append("- High growth potential but significant execution risk")
+            analysis_parts.append("- Limited analyst coverage creates information gaps")
+            analysis_parts.append("- Liquidity constraints affect institutional participation")
+            analysis_parts.append("- Operational leverage amplifies both upside and downside")
+        
+        analysis_parts.append("")
+        
+        # Valuation context
+        if abs(upside_downside) > 30:
+            analysis_parts.append("Significant Valuation Discrepancy:")
+            analysis_parts.append("- Market pricing reflects different growth assumptions")
+            analysis_parts.append("- Potential for mean reversion or continued divergence")
+            analysis_parts.append("- Catalyst identification critical for timing")
+            analysis_parts.append("- Risk management essential given volatility")
+        elif abs(upside_downside) > 15:
+            analysis_parts.append("Moderate Valuation Gap:")
+            analysis_parts.append("- Market efficiency suggests limited mispricing")
+            analysis_parts.append("- Fundamental analysis key to identifying edge")
+            analysis_parts.append("- Position sizing should reflect conviction level")
+            analysis_parts.append("- Monitor for changing market sentiment")
+        else:
+            analysis_parts.append("Fair Value Territory:")
+            analysis_parts.append("- Market pricing appears efficient")
+            analysis_parts.append("- Focus on operational improvements and catalysts")
+            analysis_parts.append("- Dividend yield and capital allocation important")
+            analysis_parts.append("- Risk-adjusted returns may be limited")
+        
+        analysis_parts.append("")
+        
+        # DCF-specific insights
+        analysis_parts.append("DCF Model Considerations:")
+        analysis_parts.append("- Terminal value assumptions drive 60-80% of valuation")
+        analysis_parts.append("- WACC sensitivity analysis critical for range estimation")
+        analysis_parts.append("- Revenue growth assumptions most impactful variable")
+        analysis_parts.append("- Margin expansion assumptions require operational validation")
+        analysis_parts.append("- Scenario analysis essential for risk assessment")
+        
+        analysis_parts.append("")
+        
+        # Current market environment
+        analysis_parts.append("Current Market Environment:")
+        analysis_parts.append("- Interest rate environment affects discount rates and multiples")
+        analysis_parts.append("- Inflation expectations impact cost structure assumptions")
+        analysis_parts.append("- Geopolitical risks create uncertainty in global markets")
+        analysis_parts.append("- ESG factors increasingly influence investment decisions")
+        analysis_parts.append("- Technology disruption accelerating across industries")
         
         analysis = "\n".join(analysis_parts)
         
@@ -3735,16 +3824,6 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         # Company Overview
         analysis_parts.append(f"COMPREHENSIVE LBO ANALYSIS FOR {company_name.upper()}")
         analysis_parts.append("")
-        analysis_parts.append("COMPANY OVERVIEW:")
-        analysis_parts.append(f"Company: {company_name}")
-        analysis_parts.append(f"Sector: {sector}")
-        analysis_parts.append(f"Market Cap: ${market_cap/1e9:.1f}B")
-        analysis_parts.append(f"Revenue: ${revenue/1e9:.1f}B")
-        analysis_parts.append(f"Operating Margin: {operating_margin*100:.1f}%")
-        analysis_parts.append(f"Current Debt: ${debt_levels/1e9:.1f}B")
-        analysis_parts.append("")
-        
-        # LBO Results
         analysis_parts.append("LBO MODEL RESULTS:")
         analysis_parts.append(f"Projected IRR: {irr*100:.1f}%")
         analysis_parts.append(f"Multiple of Money: {multiple:.1f}x")
@@ -3820,25 +3899,110 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         analysis_parts.append("")
         
         # Specific Recommendations
-        analysis_parts.append("**SPECIFIC LBO RECOMMENDATIONS:**")
-        analysis_parts.append(f"1. **ACQUISITION DECISION**: {recommendation} with {confidence.lower()} confidence")
-        analysis_parts.append(f"2. **OFFER PRICE**: Consider ${market_cap/1e9:.1f}B - ${market_cap*1.2/1e9:.1f}B range")
-        analysis_parts.append("3. **DEBT STRUCTURE**: Target 60-70% debt/equity mix")
-        analysis_parts.append("4. **OPERATIONAL IMPROVEMENTS**: Focus on margin expansion and cost reduction")
-        analysis_parts.append("5. **EXIT STRATEGY**: Plan for 3-5 year hold period with IPO or strategic sale")
-        analysis_parts.append("6. **RETURN EXPECTATIONS**: Target {irr*100:.1f}% IRR with {multiple:.1f}x multiple")
-        analysis_parts.append("7. **RISK MITIGATION**: Implement robust operational monitoring")
-        analysis_parts.append("8. **COMPETITIVE ADVANTAGES**: Leverage sector expertise and operational capabilities")
-        analysis_parts.append("9. **INTEGRATION PLAN**: Develop comprehensive 100-day plan")
-        analysis_parts.append("10. **MONITORING METRICS**: Track EBITDA growth, debt ratios, and market position")
+        analysis_parts.append("SPECIFIC LBO RECOMMENDATIONS:")
+        analysis_parts.append(f"1. ACQUISITION DECISION: {recommendation} with {confidence.lower()} confidence")
+        analysis_parts.append(f"2. OFFER PRICE: Consider ${market_cap/1e9:.1f}B - ${market_cap*1.2/1e9:.1f}B range")
+        analysis_parts.append("3. DEBT STRUCTURE: Target 60-70% debt/equity mix")
+        analysis_parts.append("4. OPERATIONAL IMPROVEMENTS: Focus on margin expansion and cost reduction")
+        analysis_parts.append("5. EXIT STRATEGY: Plan for 3-5 year hold period with IPO or strategic sale")
+        analysis_parts.append("6. RETURN EXPECTATIONS: Target {irr*100:.1f}% IRR with {multiple:.1f}x multiple")
+        analysis_parts.append("7. RISK MITIGATION: Implement robust operational monitoring")
+        analysis_parts.append("8. COMPETITIVE ADVANTAGES: Leverage sector expertise and operational capabilities")
+        analysis_parts.append("9. INTEGRATION PLAN: Develop comprehensive 100-day plan")
+        analysis_parts.append("10. MONITORING METRICS: Track EBITDA growth, debt ratios, and market position")
         analysis_parts.append("")
         
         # Market Context
-        analysis_parts.append("**MARKET CONTEXT:**")
-        analysis_parts.append("- LBO market conditions affecting debt availability and pricing")
-        analysis_parts.append("- Exit market dynamics influencing multiple assumptions")
-        analysis_parts.append("- Sector trends impacting operational improvement potential")
-        analysis_parts.append("- Interest rate environment affecting debt service capacity")
+        analysis_parts.append("MARKET CONTEXT & STRATEGIC INSIGHTS:")
+        
+        # LBO market conditions
+        analysis_parts.append("LBO Market Environment:")
+        analysis_parts.append("- Debt markets affecting leverage capacity and pricing")
+        analysis_parts.append("- Exit market conditions influencing multiple assumptions")
+        analysis_parts.append("- Interest rate environment impacting debt service capacity")
+        analysis_parts.append("- Regulatory environment affecting deal structures")
+        
+        analysis_parts.append("")
+        
+        # Sector-specific LBO considerations
+        if sector == 'Technology':
+            analysis_parts.append("Technology Sector LBO Dynamics:")
+            analysis_parts.append("- High growth potential but execution risk in competitive markets")
+            analysis_parts.append("- Technology disruption requires continuous innovation investment")
+            analysis_parts.append("- Talent retention critical for operational improvements")
+            analysis_parts.append("- Exit multiples sensitive to growth rate sustainability")
+        elif sector == 'Healthcare':
+            analysis_parts.append("Healthcare Sector LBO Dynamics:")
+            analysis_parts.append("- Regulatory approval cycles create timing and execution risk")
+            analysis_parts.append("- Patent cliffs require pipeline development and R&D investment")
+            analysis_parts.append("- Defensive characteristics provide downside protection")
+            analysis_parts.append("- Consolidation opportunities in fragmented markets")
+        elif sector == 'Financial Services':
+            analysis_parts.append("Financial Services Sector LBO Dynamics:")
+            analysis_parts.append("- Regulatory capital requirements constrain leverage capacity")
+            analysis_parts.append("- Interest rate sensitivity affects net interest margins")
+            analysis_parts.append("- Digital transformation requires significant technology investment")
+            analysis_parts.append("- Economic cycles drive credit quality and loan demand")
+        elif sector == 'Consumer Discretionary':
+            analysis_parts.append("Consumer Discretionary Sector LBO Dynamics:")
+            analysis_parts.append("- Economic sensitivity requires robust operational improvements")
+            analysis_parts.append("- E-commerce disruption necessitates omnichannel capabilities")
+            analysis_parts.append("- Brand strength and pricing power critical for margin expansion")
+            analysis_parts.append("- Consumer spending patterns affect revenue predictability")
+        elif sector == 'Energy':
+            analysis_parts.append("Energy Sector LBO Dynamics:")
+            analysis_parts.append("- Commodity price volatility requires hedging strategies")
+            analysis_parts.append("- ESG pressures accelerating transition to sustainable operations")
+            analysis_parts.append("- Capital intensity requires disciplined investment allocation")
+            analysis_parts.append("- Geopolitical risks affect supply chains and pricing")
+        else:
+            analysis_parts.append("Sector-Specific LBO Considerations:")
+            analysis_parts.append("- Industry-specific operational improvement opportunities")
+            analysis_parts.append("- Regulatory environment affecting deal structures and timing")
+            analysis_parts.append("- Competitive dynamics influencing exit strategies")
+            analysis_parts.append("- Technology disruption requiring operational adaptation")
+        
+        analysis_parts.append("")
+        
+        # LBO-specific insights
+        analysis_parts.append("LBO Model Considerations:")
+        analysis_parts.append("- Debt capacity analysis critical for optimal capital structure")
+        analysis_parts.append("- Operational improvement assumptions require management validation")
+        analysis_parts.append("- Exit multiple assumptions sensitive to market conditions")
+        analysis_parts.append("- IRR calculations depend on hold period and exit timing")
+        analysis_parts.append("- Cash flow generation essential for debt service and growth")
+        
+        analysis_parts.append("")
+        
+        # Market cap-based LBO insights
+        if market_cap > 10000000000:  # > $10B
+            analysis_parts.append("Large-Cap LBO Considerations:")
+            analysis_parts.append("- Institutional exit options provide liquidity")
+            analysis_parts.append("- Regulatory scrutiny increases with market dominance")
+            analysis_parts.append("- Operational improvements require significant scale")
+            analysis_parts.append("- Management team retention critical for execution")
+        elif market_cap > 1000000000:  # > $1B
+            analysis_parts.append("Mid-Cap LBO Considerations:")
+            analysis_parts.append("- Growth potential balanced with operational maturity")
+            analysis_parts.append("- Acquisition opportunities for strategic buyers")
+            analysis_parts.append("- Management execution critical for value creation")
+            analysis_parts.append("- Exit options include IPO and strategic sale")
+        else:  # < $1B
+            analysis_parts.append("Small-Cap LBO Considerations:")
+            analysis_parts.append("- High growth potential but significant execution risk")
+            analysis_parts.append("- Limited exit options may constrain valuations")
+            analysis_parts.append("- Operational leverage amplifies improvement impact")
+            analysis_parts.append("- Management team alignment essential for success")
+        
+        analysis_parts.append("")
+        
+        # Current LBO market environment
+        analysis_parts.append("Current LBO Market Environment:")
+        analysis_parts.append("- Debt availability and pricing affecting deal structures")
+        analysis_parts.append("- Exit market conditions influencing multiple assumptions")
+        analysis_parts.append("- Interest rate environment impacting debt service capacity")
+        analysis_parts.append("- ESG factors increasingly important for investors")
+        analysis_parts.append("- Technology disruption requiring operational adaptation")
         
         analysis = "\n".join(analysis_parts)
         
