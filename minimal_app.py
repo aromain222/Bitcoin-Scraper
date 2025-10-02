@@ -7272,9 +7272,9 @@ def model_results(model_id):
             </div>
 
             <!-- Jump to Chat Button -->
-            <div class="mb-4">
-                <button id="jump-to-chat" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                    Jump to Chat
+            <div class="mb-3">
+                <button id="jump-to-chat" class="bg-gray-50 text-gray-600 border border-gray-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors">
+                    💬 Chat with AI
                 </button>
             </div>
 
@@ -7364,23 +7364,23 @@ def model_results(model_id):
                 </div>
 
                         <!-- Valuation Results -->
-                        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-6">Valuation Results</h2>
+                        <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
+                            <h2 class="text-base font-medium text-gray-900 mb-4">Valuation Results</h2>
                             
 {valuation_html}
                         </div>
 
                         <!-- Actions -->
-                        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                            <h3 class="font-medium text-gray-900 mb-4">Next Steps</h3>
-                            <div class="flex flex-wrap gap-3">
-                                <a href="/generate-model" class="bg-navy text-white px-4 py-2 rounded-lg font-medium hover:bg-navy/90 transition-colors">
+                        <div class="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
+                            <h3 class="text-sm font-medium text-gray-700 mb-3">Next Steps</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="/generate-model" class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
                                     Generate Another Model
                                 </a>
-                                <a href="/models" class="bg-white text-navy border border-navy px-4 py-2 rounded-lg font-medium hover:bg-navy hover:text-white transition-colors">
+                                <a href="/models" class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors">
                                     View All Models
                                 </a>
-                                <a href="/" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                <a href="/" class="bg-gray-50 text-gray-600 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors">
                                     Home
                                 </a>
                             </div>
@@ -7390,27 +7390,38 @@ def model_results(model_id):
 
                 <!-- Right Panel - Chat Assistant (Desktop) -->
                 <div class="col-span-12 xl:col-span-4 xl:sticky xl:top-4 h-fit">
-                    <div class="bg-white rounded-xl border shadow-sm flex flex-col">
-                        <header class="px-4 py-3 border-b font-semibold text-gray-900">Analyst Assistant</header>
-                        <div id="chat-messages" class="px-4 py-3 max-h-[75vh] overflow-y-auto" aria-live="polite">
-                            <div class="text-sm text-gray-500 text-center py-2">
-                                Ask me anything about this financial model!
+                    <div class="bg-white rounded-lg border border-gray-100 shadow-sm flex flex-col">
+                        <header class="px-4 py-3 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-sm font-medium text-gray-900">Analyst Assistant</h3>
+                            </div>
+                        </header>
+                        <div id="chat-messages" class="px-4 py-3 max-h-[60vh] overflow-y-auto" aria-live="polite">
+                            <div class="text-xs text-gray-400 text-center py-3">
+                                Ask me anything about this financial model
                             </div>
                         </div>
-                        <div class="p-3 border-t sticky bottom-0 bg-white">
+                        <div class="p-3 border-t border-gray-100 bg-gray-50">
                             <div class="flex space-x-2">
                                 <input type="text" id="chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
-                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       class="flex-1 px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
                                        aria-label="Chat input">
-                                <button id="chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                <button id="chat-send" class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                                         aria-label="Send message">
-                                    Send
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                    </svg>
                                 </button>
                             </div>
                             <div id="chat-loading" class="hidden mt-2">
-                                <div class="flex items-center justify-center py-2">
-                                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                    <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                                <div class="flex items-center justify-center py-1">
+                                    <div class="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                                    <span class="ml-2 text-xs text-gray-500">AI is thinking...</span>
                                 </div>
                             </div>
                         </div>
@@ -7420,21 +7431,27 @@ def model_results(model_id):
         </div>
 
         <!-- Mobile Chat FAB -->
-        <button id="mobile-chat-fab" aria-label="Open chat" class="fixed bottom-5 right-5 rounded-full bg-blue-600 text-white shadow-lg px-4 py-3 xl:hidden z-50">
+        <button id="mobile-chat-fab" aria-label="Open chat" class="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors xl:hidden z-50 flex items-center justify-center">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
             </svg>
-            <span class="ml-2 text-sm font-medium">Chat</span>
         </button>
 
         <!-- Mobile Chat Bottom Sheet -->
-        <div id="mobile-chat-sheet" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-white rounded-t-2xl shadow-2xl transform translate-y-full transition-transform duration-300 ease-out xl:hidden z-50">
+        <div id="mobile-chat-sheet" class="fixed bottom-0 left-0 right-0 h-[65vh] bg-white rounded-t-xl shadow-2xl transform translate-y-full transition-transform duration-300 ease-out xl:hidden z-50">
             <div class="flex flex-col h-full">
                 <!-- Header -->
-                <div class="px-4 py-3 border-b flex items-center justify-between">
-                    <h3 class="font-semibold text-gray-900">Analyst Assistant</h3>
+                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-medium text-gray-900">Analyst Assistant</h3>
+                    </div>
                     <button id="close-mobile-chat" class="p-2 hover:bg-gray-100 rounded-full">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
@@ -7442,26 +7459,28 @@ def model_results(model_id):
                 
                 <!-- Messages -->
                 <div id="mobile-chat-messages" class="flex-1 px-4 py-3 overflow-y-auto" aria-live="polite">
-                    <div class="text-sm text-gray-500 text-center py-2">
-                        Ask me anything about this financial model!
+                    <div class="text-xs text-gray-400 text-center py-3">
+                        Ask me anything about this financial model
                     </div>
                 </div>
                 
                 <!-- Input -->
-                <div class="p-3 border-t bg-white" style="padding-bottom: env(safe-area-inset-bottom, 12px);">
+                <div class="p-3 border-t border-gray-100 bg-gray-50" style="padding-bottom: env(safe-area-inset-bottom, 12px);">
                     <div class="flex space-x-2">
                         <input type="text" id="mobile-chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               class="flex-1 px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
                                aria-label="Chat input">
-                        <button id="mobile-chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                        <button id="mobile-chat-send" class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                                 aria-label="Send message">
-                            Send
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
                         </button>
                     </div>
                     <div id="mobile-chat-loading" class="hidden mt-2">
-                        <div class="flex items-center justify-center py-2">
-                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                            <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                        <div class="flex items-center justify-center py-1">
+                            <div class="animate-spin rounded-full h-3 w-3 border-b border-blue-600"></div>
+                            <span class="ml-2 text-xs text-gray-500">AI is thinking...</span>
                         </div>
                     </div>
                 </div>
@@ -7543,10 +7562,10 @@ def model_results(model_id):
                 function addMessage(content, isUser = false, isMobile = false) {{
                     const targetMessages = isMobile ? mobileChatMessages : chatMessages;
                     const messageEl = document.createElement('div');
-                    messageEl.className = `flex ${{isUser ? 'justify-end' : 'justify-start'}}`;
+                    messageEl.className = `flex ${{isUser ? 'justify-end' : 'justify-start'}} mb-2`;
                     
                     const bubbleEl = document.createElement('div');
-                    bubbleEl.className = `max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm ${{isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}}`;
+                    bubbleEl.className = `max-w-xs lg:max-w-md px-3 py-2 rounded-lg text-xs ${{isUser ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-700 border border-gray-100'}}`;
                     bubbleEl.textContent = content;
                     
                     messageEl.appendChild(bubbleEl);
