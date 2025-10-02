@@ -2155,20 +2155,32 @@ class FinancialAIAgent:
         return self.analyze_model('dcf', company_data, dcf_results, scenarios)
     
     def _analyze_dcf_model(self, company_data, dcf_results, scenarios=None, assumptions=None):
-        """Generate comprehensive DCF analysis"""
-        prompt = self._build_dcf_analysis_prompt(company_data, dcf_results, scenarios)
-        
-        response = self.claude_client.messages.create(
-            model="claude-3-sonnet-20240229",
-            max_tokens=1500,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        return {
-            'analysis': response.content[0].text,
-            'source': 'claude',
-            'timestamp': datetime.now().isoformat()
-        }
+        """Generate company-specific DCF summary using actual model inputs/outputs"""
+        try:
+            if not self.claude_client:
+                print("⚠️ Claude client not available, using fallback analysis")
+                return self._fallback_dcf_analysis(company_data, dcf_results)
+            
+            # Use the new DCF summary prompt for company-specific analysis
+            prompt = self._build_dcf_summary_prompt(company_data, dcf_results, assumptions or {})
+            
+            response = self.claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                temperature=0.2,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            analysis = response.content[0].text.strip()
+            return {
+                'analysis': analysis,
+                'source': 'claude',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ AI DCF analysis failed: {e}")
+            return self._fallback_dcf_analysis(company_data, dcf_results)
     
     def _analyze_lbo_model(self, company_data, lbo_results, scenarios=None, assumptions=None):
         """Generate comprehensive LBO analysis"""
@@ -2497,6 +2509,116 @@ class FinancialAIAgent:
             print(f"❌ AI chat failed: {e}")
             return self._fallback_chat_response(user_question, model_context)
     
+    def _build_dcf_summary_prompt(self, company_data, dcf_results, assumptions):
+        """Build company-specific DCF summary prompt using actual model inputs/outputs"""
+        ticker = company_data.get('ticker', 'Unknown')
+        company_name = company_data.get('company_name', 'Unknown')
+        
+        # Extract actual DCF inputs and outputs
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        equity_value = dcf_results.get('equity_value', 0)
+        market_cap = company_data.get('market_cap', 0)
+        
+        # Handle list values by taking the first element
+        if isinstance(enterprise_value, list):
+            enterprise_value = enterprise_value[0] if enterprise_value else 0
+        if isinstance(implied_price, list):
+            implied_price = implied_price[0] if implied_price else 0
+        if isinstance(current_price, list):
+            current_price = current_price[0] if current_price else 0
+        if isinstance(upside_downside, list):
+            upside_downside = upside_downside[0] if upside_downside else 0
+        if isinstance(equity_value, list):
+            equity_value = equity_value[0] if equity_value else 0
+        if isinstance(market_cap, list):
+            market_cap = market_cap[0] if market_cap else 0
+        
+        # Extract assumptions
+        base_assumptions = assumptions.get('base', {})
+        wacc = base_assumptions.get('wacc', 0)
+        revenue_growth = base_assumptions.get('revenue_growth_rate', 0)
+        terminal_growth = base_assumptions.get('terminal_growth_rate', 0)
+        operating_margin = base_assumptions.get('operating_margin', 0)
+        
+        # Handle list values for assumptions
+        if isinstance(wacc, list):
+            wacc = wacc[0] if wacc else 0
+        if isinstance(revenue_growth, list):
+            revenue_growth = revenue_growth[0] if revenue_growth else 0
+        if isinstance(terminal_growth, list):
+            terminal_growth = terminal_growth[0] if terminal_growth else 0
+        if isinstance(operating_margin, list):
+            operating_margin = operating_margin[0] if operating_margin else 0
+        
+        # Calculate terminal value share
+        pv_cash_flows = dcf_results.get('pv_cash_flows', 0)
+        pv_terminal_value = dcf_results.get('pv_terminal_value', 0)
+        
+        # Handle list values for PV calculations
+        if isinstance(pv_cash_flows, list):
+            pv_cash_flows = pv_cash_flows[0] if pv_cash_flows else 0
+        if isinstance(pv_terminal_value, list):
+            pv_terminal_value = pv_terminal_value[0] if pv_terminal_value else 0
+            
+        terminal_share = (pv_terminal_value / enterprise_value * 100) if enterprise_value > 0 else 0
+        
+        prompt = f"""
+Write a company-specific DCF overview using only the actual inputs and outputs provided.
+
+No boilerplate. No generalized sector talk. No clichés.
+
+If a metric isn't provided in inputs, do not invent it.
+
+Lead with numbers in the first 5 lines: EV, implied equity value per share, current price, % upside/(downside), terminal method & driver (g or multiple), WACC.
+
+Then give a tight driver narrative (≤ 8 bullets): revenue growth path, margin path, reinvestment (CapEx & ΔNWC), terminal logic, and the 2–3 sensitivities that actually moved the value the most.
+
+Add a sanity check section: compare implied equity value vs market cap; flag any implausible outputs (e.g., implied price off by >100% vs current, terminal value >85% of EV, g ≥ WACC, margins beyond peer range). Use 'FLAG: …' lines.
+
+End with a clear recommendation string: RECOMMENDATION: <Buy/Hold/Sell> | Confidence: <Low/Med/High> | Why: <1 short sentence tied to the numbers>.
+
+Tone: analytical, direct, audit-ready. Length cap: ~200–300 words.
+
+ACTUAL MODEL INPUTS/OUTPUTS:
+- Ticker: {ticker}
+- Company: {company_name}
+- Enterprise Value: ${enterprise_value/1e9:.1f}B
+- Implied Price: ${implied_price:.2f}
+- Current Price: ${current_price:.2f}
+- Upside/(Downside): {upside_downside:.1f}%
+- Equity Value: ${equity_value/1e9:.1f}B
+- Market Cap: ${market_cap/1e9:.1f}B
+- WACC: {wacc*100:.1f}%
+- Revenue Growth Rate: {revenue_growth*100:.1f}%
+- Terminal Growth Rate: {terminal_growth*100:.1f}%
+- Operating Margin: {operating_margin*100:.1f}%
+- Terminal Value Share of EV: {terminal_share:.1f}%
+- PV Cash Flows: ${pv_cash_flows/1e9:.1f}B
+- PV Terminal Value: ${pv_terminal_value/1e9:.1f}B
+
+REQUIRED OUTPUT FORMAT:
+DCF SUMMARY — {ticker} {company_name}
+EV: ${enterprise_value/1e9:.1f}B | Implied Price: ${implied_price:.2f} | Current: ${current_price:.2f} | Upside/(Downside): {upside_downside:.1f}%
+WACC: {wacc*100:.1f}% | Terminal: Perpetuity g={terminal_growth*100:.1f}%
+
+Key Drivers
+• Revenue growth: {revenue_growth*100:.1f}% over forecast period
+• EBITDA margin: {operating_margin*100:.1f}%
+• Terminal rationale: Perpetuity growth model at {terminal_growth*100:.1f}%
+• Sensitivities that move value: WACC sensitivity, terminal growth sensitivity
+
+Sanity Checks
+• TV share of EV: {terminal_share:.1f}%  {"[FLAG if >85%]" if terminal_share > 85 else ""}
+• Implied equity vs market cap: ${equity_value/1e9:.1f}B vs ${market_cap/1e9:.1f}B  {"[FLAG if >100% gap]" if abs(equity_value - market_cap) / market_cap > 1.0 else ""}
+• g < WACC: {terminal_growth < wacc}  {"[FLAG if False]" if terminal_growth >= wacc else ""}
+
+RECOMMENDATION: <Buy/Hold/Sell> | Confidence: <L/M/H> | Why: <1 sentence>
+"""
+        return prompt
+
     def _build_dcf_analysis_prompt(self, company_data, dcf_results, scenarios=None):
         """Build comprehensive DCF analysis prompt"""
         company_name = company_data.get('company_name', 'Unknown')
@@ -3590,26 +3712,110 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         else:
             return self._fallback_generic_analysis(model_type, company_data, model_results)
     
-    def _fallback_dcf_analysis(self, company_data, dcf_results):
-        """Enhanced fallback DCF analysis when AI is unavailable"""
+    def _fallback_dcf_analysis(self, company_data, dcf_results, assumptions=None):
+        """Company-specific DCF summary fallback when AI is unavailable"""
+        ticker = company_data.get('ticker', 'Unknown')
+        company_name = company_data.get('company_name', 'Unknown')
+        
+        # Extract actual DCF inputs and outputs
+        enterprise_value = dcf_results.get('enterprise_value', 0)
+        implied_price = dcf_results.get('implied_price', 0)
+        current_price = dcf_results.get('current_price', 0)
+        upside_downside = dcf_results.get('upside_downside', 0)
+        equity_value = dcf_results.get('equity_value', 0)
+        market_cap = company_data.get('market_cap', 0)
+        
+        # Extract assumptions
+        base_assumptions = assumptions.get('base', {}) if assumptions else {}
+        wacc = base_assumptions.get('wacc', 0.10)  # Default 10%
+        revenue_growth = base_assumptions.get('revenue_growth_rate', 0.08)  # Default 8%
+        terminal_growth = base_assumptions.get('terminal_growth_rate', 0.025)  # Default 2.5%
+        operating_margin = base_assumptions.get('operating_margin', 0.20)  # Default 20%
+        
+        # Calculate terminal value share
+        pv_cash_flows = dcf_results.get('pv_cash_flows', 0)
+        pv_terminal_value = dcf_results.get('pv_terminal_value', 0)
+        terminal_share = (pv_terminal_value / enterprise_value * 100) if enterprise_value > 0 else 0
+        
+        # Generate company-specific DCF summary
+        analysis_parts = []
+        
+        # Header with key numbers
+        analysis_parts.append(f"DCF SUMMARY — {ticker} {company_name}")
+        analysis_parts.append(f"EV: ${enterprise_value/1e9:.1f}B | Implied Price: ${implied_price:.2f} | Current: ${current_price:.2f} | Upside/(Downside): {upside_downside:.1f}%")
+        analysis_parts.append(f"WACC: {wacc*100:.1f}% | Terminal: Perpetuity g={terminal_growth*100:.1f}%")
+        analysis_parts.append("")
+        
+        # Key Drivers
+        analysis_parts.append("Key Drivers")
+        analysis_parts.append(f"• Revenue growth: {revenue_growth*100:.1f}% over forecast period")
+        analysis_parts.append(f"• EBITDA margin: {operating_margin*100:.1f}%")
+        analysis_parts.append(f"• Terminal rationale: Perpetuity growth model at {terminal_growth*100:.1f}%")
+        analysis_parts.append("• Sensitivities that move value: WACC sensitivity, terminal growth sensitivity")
+        analysis_parts.append("")
+        
+        # Sanity Checks
+        analysis_parts.append("Sanity Checks")
+        analysis_parts.append(f"• TV share of EV: {terminal_share:.1f}%  {'[FLAG if >85%]' if terminal_share > 85 else ''}")
+        
+        # Check equity vs market cap gap
+        equity_market_gap = abs(equity_value - market_cap) / market_cap if market_cap > 0 else 0
+        analysis_parts.append(f"• Implied equity vs market cap: ${equity_value/1e9:.1f}B vs ${market_cap/1e9:.1f}B  {'[FLAG if >100% gap]' if equity_market_gap > 1.0 else ''}")
+        
+        # Check terminal growth vs WACC
+        analysis_parts.append(f"• g < WACC: {terminal_growth < wacc}  {'[FLAG if False]' if terminal_growth >= wacc else ''}")
+        analysis_parts.append("")
+        
+        # Investment Recommendation
+        if upside_downside > 20:
+            recommendation = "BUY"
+            confidence = "H"
+            reasoning = "Significant upside potential"
+        elif upside_downside > 10:
+            recommendation = "BUY"
+            confidence = "M"
+            reasoning = "Attractive upside potential"
+        elif upside_downside > -10:
+            recommendation = "HOLD"
+            confidence = "M"
+            reasoning = "Fairly valued"
+        elif upside_downside > -20:
+            recommendation = "SELL"
+            confidence = "M"
+            reasoning = "Overvalued with downside risk"
+        else:
+            recommendation = "SELL"
+            confidence = "H"
+            reasoning = "Significantly overvalued"
+        
+        analysis_parts.append(f"RECOMMENDATION: {recommendation} | Confidence: {confidence} | Why: {reasoning}")
+        
+        return {
+            'analysis': '\n'.join(analysis_parts),
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_lbo_analysis(self, company_data, lbo_results):
+        """Enhanced fallback LBO analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
         sector = company_data.get('sector', 'Unknown')
         market_cap = company_data.get('market_cap', 0)
         revenue = company_data.get('revenue', 0)
         operating_margin = company_data.get('operating_margin', 0)
         
-        enterprise_value = dcf_results.get('enterprise_value', 0)
-        implied_price = dcf_results.get('implied_price', 0)
-        current_price = dcf_results.get('current_price', 0)
-        upside_downside = dcf_results.get('upside_downside', 0)
+        enterprise_value = lbo_results.get('enterprise_value', 0)
+        implied_price = lbo_results.get('implied_price', 0)
+        current_price = lbo_results.get('current_price', 0)
+        upside_downside = lbo_results.get('upside_downside', 0)
         
         # Generate comprehensive analysis
         analysis_parts = []
         
         # Valuation Results
-        analysis_parts.append(f"COMPREHENSIVE DCF INVESTMENT ANALYSIS FOR {company_name.upper()}")
+        analysis_parts.append(f"COMPREHENSIVE LBO INVESTMENT ANALYSIS FOR {company_name.upper()}")
         analysis_parts.append("")
-        analysis_parts.append("DCF VALUATION RESULTS:")
+        analysis_parts.append("LBO VALUATION RESULTS:")
         analysis_parts.append(f"Enterprise Value: ${enterprise_value/1e9:.1f}B")
         analysis_parts.append(f"Implied Price: ${implied_price:.2f}")
         analysis_parts.append(f"Current Price: ${current_price:.2f}")
@@ -3665,6 +3871,245 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
             analysis_parts.append("Healthcare sector defensive characteristics")
         elif sector == 'Financial Services':
             analysis_parts.append("Financial services sector interest rate sensitivity")
+        
+        analysis_parts.append("")
+        
+        # Risk Factors
+        analysis_parts.append("KEY RISK FACTORS:")
+        
+        # Sector-specific risks
+        if sector == 'Technology':
+            analysis_parts.append("- Technology disruption and rapid obsolescence risk")
+            analysis_parts.append("- Regulatory scrutiny on data privacy and antitrust")
+            analysis_parts.append("- Talent retention and competitive hiring pressures")
+            analysis_parts.append("- Innovation cycles creating market share volatility")
+        elif sector == 'Healthcare':
+            analysis_parts.append("- Regulatory approval delays and compliance costs")
+            analysis_parts.append("- Patent cliff exposure and generic competition")
+            analysis_parts.append("- Clinical trial failures and safety concerns")
+            analysis_parts.append("- Healthcare policy changes affecting reimbursement")
+        elif sector == 'Financial Services':
+            analysis_parts.append("- Interest rate sensitivity affecting margins")
+            analysis_parts.append("- Regulatory capital requirements constraining returns")
+            analysis_parts.append("- Credit quality deterioration in economic downturns")
+            analysis_parts.append("- Digital disruption from fintech competitors")
+        elif sector == 'Consumer Discretionary':
+            analysis_parts.append("- Economic sensitivity and consumer spending volatility")
+            analysis_parts.append("- E-commerce disruption and omnichannel challenges")
+            analysis_parts.append("- Supply chain disruptions and cost inflation")
+            analysis_parts.append("- Brand reputation and competitive positioning risks")
+        elif sector == 'Energy':
+            analysis_parts.append("- Commodity price volatility affecting margins")
+            analysis_parts.append("- ESG pressures accelerating energy transition")
+            analysis_parts.append("- Geopolitical risks affecting supply chains")
+            analysis_parts.append("- Capital intensity and investment allocation risks")
+        else:
+            analysis_parts.append("- Industry-specific competitive and regulatory risks")
+            analysis_parts.append("- Economic cycle sensitivity and demand volatility")
+            analysis_parts.append("- Technology disruption affecting business models")
+            analysis_parts.append("- ESG factors increasingly impacting valuations")
+        
+        # Market cap-specific risks
+        if market_cap > 200000000000:  # > $200B
+            analysis_parts.append("- Regulatory scrutiny increases with market dominance")
+            analysis_parts.append("- Limited upside potential due to size constraints")
+            analysis_parts.append("- Institutional ownership creates selling pressure")
+        elif market_cap < 1000000000:  # < $1B
+            analysis_parts.append("- Limited analyst coverage creates information gaps")
+            analysis_parts.append("- Liquidity constraints affecting institutional participation")
+            analysis_parts.append("- Higher execution risk and operational leverage")
+        
+        # Valuation-specific risks
+        if abs(upside_downside) > 30:
+            analysis_parts.append("- Significant valuation gap creates volatility risk")
+            analysis_parts.append("- Market sentiment shifts can amplify price movements")
+        elif upside_downside < -20:
+            analysis_parts.append("- Downside risk from continued valuation compression")
+            analysis_parts.append("- Potential for further multiple contraction")
+        
+        # LBO-specific risks
+        analysis_parts.append("- LBO model sensitivity to exit multiple assumptions")
+        analysis_parts.append("- Debt capacity assumptions may be optimistic")
+        analysis_parts.append("- Operational improvement assumptions require validation")
+        analysis_parts.append("- Exit timing assumptions critical for returns")
+        
+        analysis_parts.append("")
+        
+        # Specific Recommendations
+        analysis_parts.append("SPECIFIC INVESTMENT RECOMMENDATIONS:")
+        
+        # Recommendation-specific guidance
+        if recommendation == "STRONG BUY":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (LBO implied value)")
+            analysis_parts.append("3. TIMEFRAME: Long-term (1-2 years) investment horizon")
+            analysis_parts.append("4. POSITION SIZING: 3-7% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Consider dollar-cost averaging for volatility")
+            analysis_parts.append("6. EXIT STRATEGY: Monitor key operational metrics quarterly")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 20-25% below entry")
+            analysis_parts.append("8. CATALYSTS: Earnings reports, sector trends, market conditions")
+            analysis_parts.append("9. MONITORING: Track revenue growth, margin expansion, market share")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider options for volatility management")
+        elif recommendation == "BUY":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (LBO implied value)")
+            analysis_parts.append("3. TIMEFRAME: Medium-term (6-18 months) investment horizon")
+            analysis_parts.append("4. POSITION SIZING: 2-5% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Wait for pullbacks or market weakness")
+            analysis_parts.append("6. EXIT STRATEGY: Monitor quarterly earnings and guidance")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 15-20% below entry")
+            analysis_parts.append("8. CATALYSTS: Earnings beats, sector rotation, market recovery")
+            analysis_parts.append("9. MONITORING: Track operational metrics and competitive position")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider covered calls for income")
+        elif recommendation == "HOLD":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (LBO implied value)")
+            analysis_parts.append("3. TIMEFRAME: Short to medium-term (3-12 months)")
+            analysis_parts.append("4. POSITION SIZING: 1-3% portfolio allocation recommended")
+            analysis_parts.append("5. ENTRY STRATEGY: Only on significant pullbacks")
+            analysis_parts.append("6. EXIT STRATEGY: Consider trimming on strength")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 10-15% below entry")
+            analysis_parts.append("8. CATALYSTS: Operational improvements, market conditions")
+            analysis_parts.append("9. MONITORING: Focus on margin expansion and efficiency")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider defensive positioning")
+        elif recommendation == "SELL":
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (LBO implied value)")
+            analysis_parts.append("3. TIMEFRAME: Short-term (1-6 months) exit horizon")
+            analysis_parts.append("4. POSITION SIZING: Reduce to 0-1% portfolio allocation")
+            analysis_parts.append("5. ENTRY STRATEGY: Avoid new positions")
+            analysis_parts.append("6. EXIT STRATEGY: Sell on any strength or rallies")
+            analysis_parts.append("7. RISK MANAGEMENT: Set stop-loss at 5-10% below entry")
+            analysis_parts.append("8. CATALYSTS: Negative earnings surprises, sector headwinds")
+            analysis_parts.append("9. MONITORING: Watch for deteriorating fundamentals")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider short positions or puts")
+        else:  # STRONG SELL
+            analysis_parts.append(f"1. PRIMARY RECOMMENDATION: {recommendation} with {confidence.lower()} confidence")
+            analysis_parts.append(f"2. PRICE TARGET: ${implied_price:.2f} (LBO implied value)")
+            analysis_parts.append("3. TIMEFRAME: Immediate exit recommended")
+            analysis_parts.append("4. POSITION SIZING: Exit all positions immediately")
+            analysis_parts.append("5. ENTRY STRATEGY: Avoid at all costs")
+            analysis_parts.append("6. EXIT STRATEGY: Sell immediately regardless of price")
+            analysis_parts.append("7. RISK MANAGEMENT: No stop-loss needed - exit now")
+            analysis_parts.append("8. CATALYSTS: Fundamental deterioration, sector collapse")
+            analysis_parts.append("9. MONITORING: Watch for further downside")
+            analysis_parts.append("10. ALTERNATIVE STRATEGIES: Consider short positions")
+        
+        analysis_parts.append("")
+        
+        # Market Context
+        analysis_parts.append("MARKET CONTEXT & STRATEGIC INSIGHTS:")
+        
+        # Sector-specific insights
+        if sector == 'Technology':
+            analysis_parts.append("Technology Sector Dynamics:")
+            analysis_parts.append("- High growth potential but significant volatility and disruption risk")
+            analysis_parts.append("- Innovation cycles drive rapid obsolescence and market share shifts")
+            analysis_parts.append("- Regulatory scrutiny increasing on data privacy and antitrust")
+            analysis_parts.append("- Cloud computing and AI driving new revenue streams")
+        elif sector == 'Healthcare':
+            analysis_parts.append("Healthcare Sector Dynamics:")
+            analysis_parts.append("- Defensive characteristics with demographic tailwinds")
+            analysis_parts.append("- Regulatory approval processes create barriers to entry")
+            analysis_parts.append("- Patent cliffs and generic competition pressure margins")
+            analysis_parts.append("- Innovation in biologics and personalized medicine")
+        elif sector == 'Financial Services':
+            analysis_parts.append("Financial Services Sector Dynamics:")
+            analysis_parts.append("- Interest rate sensitivity affects net interest margins")
+            analysis_parts.append("- Regulatory capital requirements constrain returns")
+            analysis_parts.append("- Digital transformation disrupting traditional banking")
+            analysis_parts.append("- Credit cycles create cyclical earnings volatility")
+        elif sector == 'Consumer Discretionary':
+            analysis_parts.append("Consumer Discretionary Sector Dynamics:")
+            analysis_parts.append("- Economic sensitivity drives cyclical demand patterns")
+            analysis_parts.append("- E-commerce disruption accelerating omnichannel transformation")
+            analysis_parts.append("- Supply chain optimization critical for margin expansion")
+            analysis_parts.append("- Brand strength and customer loyalty drive pricing power")
+        elif sector == 'Energy':
+            analysis_parts.append("Energy Sector Dynamics:")
+            analysis_parts.append("- Commodity price volatility drives earnings uncertainty")
+            analysis_parts.append("- ESG pressures accelerating energy transition investments")
+            analysis_parts.append("- Geopolitical risks affect global supply chains")
+            analysis_parts.append("- Capital intensity requires disciplined allocation")
+        else:
+            analysis_parts.append("Sector-Specific Considerations:")
+            analysis_parts.append("- Industry-specific regulatory and competitive dynamics")
+            analysis_parts.append("- Economic cycle sensitivity varies by subsector")
+            analysis_parts.append("- Technology disruption affecting traditional business models")
+            analysis_parts.append("- ESG factors increasingly influencing valuations")
+        
+        analysis_parts.append("")
+        
+        # Market cap-based insights
+        if market_cap > 200000000000:  # > $200B
+            analysis_parts.append("Large-Cap Market Position:")
+            analysis_parts.append("- Institutional ownership provides stability but limits upside")
+            analysis_parts.append("- Market leadership position offers competitive moats")
+            analysis_parts.append("- Regulatory scrutiny increases with market dominance")
+            analysis_parts.append("- Dividend policies and capital allocation under scrutiny")
+        elif market_cap > 10000000000:  # > $10B
+            analysis_parts.append("Mid-Cap Market Position:")
+            analysis_parts.append("- Growth potential balanced with operational stability")
+            analysis_parts.append("- Analyst coverage provides visibility and liquidity")
+            analysis_parts.append("- M&A activity creates both opportunities and risks")
+            analysis_parts.append("- Capital allocation flexibility enables strategic investments")
+        else:  # < $10B
+            analysis_parts.append("Small-Cap Market Position:")
+            analysis_parts.append("- High growth potential but significant execution risk")
+            analysis_parts.append("- Limited analyst coverage creates information gaps")
+            analysis_parts.append("- Liquidity constraints affect institutional participation")
+            analysis_parts.append("- Operational leverage amplifies both upside and downside")
+        
+        analysis_parts.append("")
+        
+        # Valuation context
+        if abs(upside_downside) > 30:
+            analysis_parts.append("Significant Valuation Discrepancy:")
+            analysis_parts.append("- Market pricing reflects different growth assumptions")
+            analysis_parts.append("- Potential for mean reversion or continued divergence")
+            analysis_parts.append("- Catalyst identification critical for timing")
+            analysis_parts.append("- Risk management essential given volatility")
+        elif abs(upside_downside) > 15:
+            analysis_parts.append("Moderate Valuation Discrepancy:")
+            analysis_parts.append("- Market and model assumptions show reasonable alignment")
+            analysis_parts.append("- Execution on operational metrics drives value realization")
+            analysis_parts.append("- Sector trends and competitive dynamics influence outcomes")
+            analysis_parts.append("- Balanced risk-reward profile requires careful monitoring")
+        else:
+            analysis_parts.append("Fair Valuation Assessment:")
+            analysis_parts.append("- Market pricing appears consistent with fundamentals")
+            analysis_parts.append("- Operational execution and efficiency gains drive value")
+            analysis_parts.append("- Sector rotation and market conditions influence performance")
+            analysis_parts.append("- Conservative positioning appropriate for risk management")
+        
+        analysis_parts.append("")
+        
+        # LBO-specific insights
+        analysis_parts.append("LBO Model Considerations:")
+        analysis_parts.append("- Exit multiple assumptions drive 60-80% of valuation")
+        analysis_parts.append("- Debt capacity analysis critical for leverage assessment")
+        analysis_parts.append("- Operational improvement assumptions most impactful variable")
+        analysis_parts.append("- Exit timing assumptions require market condition validation")
+        analysis_parts.append("- Scenario analysis essential for risk assessment")
+        
+        analysis_parts.append("")
+        
+        # Current market environment
+        analysis_parts.append("Current Market Environment:")
+        analysis_parts.append("- Interest rate environment affects debt capacity and exit multiples")
+        analysis_parts.append("- Inflation expectations impact cost structure assumptions")
+        analysis_parts.append("- Geopolitical risks create uncertainty in global markets")
+        analysis_parts.append("- ESG factors increasingly influence investment decisions")
+        analysis_parts.append("- Technology disruption accelerating across industries")
+        
+        return {
+            'analysis': '\n'.join(analysis_parts),
+            'source': 'fallback',
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def _fallback_ma_analysis(self, company_data, ma_results):
+        """Enhanced fallback M&A analysis when AI is unavailable"""
         
         analysis_parts.append("")
         
@@ -6826,9 +7271,16 @@ def model_results(model_id):
                 </div>
             </div>
 
+            <!-- Jump to Chat Button -->
+            <div class="mb-4">
+                <button id="jump-to-chat" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                    Jump to Chat
+                </button>
+            </div>
+
             <div class="grid grid-cols-12 gap-6">
                 <!-- Left Panel - Model Info -->
-                <div class="col-span-12 lg:col-span-4">
+                <div class="col-span-12 xl:col-span-8">
                     <div class="space-y-6">
                         <!-- Model Header -->
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -6908,47 +7360,10 @@ def model_results(model_id):
                             </div>
                         </div>
 
-                        <!-- AI Chat -->
-                        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                            <div class="flex items-center mb-4">
-                                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                    </svg>
-                                </div>
-                                <h3 class="font-medium text-gray-900">Ask AI About This Model</h3>
-                            </div>
-                            
-                            <div class="space-y-4">
-                                <div class="flex space-x-2">
-                                    <input type="text" id="chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
-                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <button id="chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                                        Send
-                                    </button>
-                                </div>
-                                
-                                <div id="chat-messages" class="space-y-3 max-h-64 overflow-y-auto">
-                                    <div class="text-sm text-gray-500 text-center py-2">
-                                        Ask me anything about this financial model!
-                                    </div>
-                                </div>
-                                
-                                <div id="chat-loading" class="hidden">
-                                    <div class="flex items-center justify-center py-2">
-                                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                        <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Right Panel - Valuation Results -->
-                <div class="col-span-12 lg:col-span-8">
-                    <div class="space-y-6">
-                        <!-- Key Outputs -->
+                        <!-- Valuation Results -->
                         <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
                             <h2 class="text-lg font-semibold text-gray-900 mb-6">Valuation Results</h2>
                             
@@ -6969,6 +7384,84 @@ def model_results(model_id):
                                     Home
                                 </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Chat Assistant (Desktop) -->
+                <div class="col-span-12 xl:col-span-4 xl:sticky xl:top-4 h-fit">
+                    <div class="bg-white rounded-xl border shadow-sm flex flex-col">
+                        <header class="px-4 py-3 border-b font-semibold text-gray-900">Analyst Assistant</header>
+                        <div id="chat-messages" class="px-4 py-3 max-h-[75vh] overflow-y-auto" aria-live="polite">
+                            <div class="text-sm text-gray-500 text-center py-2">
+                                Ask me anything about this financial model!
+                            </div>
+                        </div>
+                        <div class="p-3 border-t sticky bottom-0 bg-white">
+                            <div class="flex space-x-2">
+                                <input type="text" id="chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
+                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       aria-label="Chat input">
+                                <button id="chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                        aria-label="Send message">
+                                    Send
+                                </button>
+                            </div>
+                            <div id="chat-loading" class="hidden mt-2">
+                                <div class="flex items-center justify-center py-2">
+                                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                    <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Chat FAB -->
+        <button id="mobile-chat-fab" aria-label="Open chat" class="fixed bottom-5 right-5 rounded-full bg-blue-600 text-white shadow-lg px-4 py-3 xl:hidden z-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            <span class="ml-2 text-sm font-medium">Chat</span>
+        </button>
+
+        <!-- Mobile Chat Bottom Sheet -->
+        <div id="mobile-chat-sheet" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-white rounded-t-2xl shadow-2xl transform translate-y-full transition-transform duration-300 ease-out xl:hidden z-50">
+            <div class="flex flex-col h-full">
+                <!-- Header -->
+                <div class="px-4 py-3 border-b flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900">Analyst Assistant</h3>
+                    <button id="close-mobile-chat" class="p-2 hover:bg-gray-100 rounded-full">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Messages -->
+                <div id="mobile-chat-messages" class="flex-1 px-4 py-3 overflow-y-auto" aria-live="polite">
+                    <div class="text-sm text-gray-500 text-center py-2">
+                        Ask me anything about this financial model!
+                    </div>
+                </div>
+                
+                <!-- Input -->
+                <div class="p-3 border-t bg-white" style="padding-bottom: env(safe-area-inset-bottom, 12px);">
+                    <div class="flex space-x-2">
+                        <input type="text" id="mobile-chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               aria-label="Chat input">
+                        <button id="mobile-chat-send" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                                aria-label="Send message">
+                            Send
+                        </button>
+                    </div>
+                    <div id="mobile-chat-loading" class="hidden mt-2">
+                        <div class="flex items-center justify-center py-2">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
                         </div>
                     </div>
                 </div>
@@ -7029,12 +7522,26 @@ def model_results(model_id):
             }}
             
             function setupChat(modelId) {{
+                // Desktop chat elements
                 const chatInput = document.getElementById('chat-input');
                 const chatSend = document.getElementById('chat-send');
                 const chatMessages = document.getElementById('chat-messages');
                 const chatLoading = document.getElementById('chat-loading');
                 
-                function addMessage(content, isUser = false) {{
+                // Mobile chat elements
+                const mobileChatFab = document.getElementById('mobile-chat-fab');
+                const mobileChatSheet = document.getElementById('mobile-chat-sheet');
+                const mobileChatInput = document.getElementById('mobile-chat-input');
+                const mobileChatSend = document.getElementById('mobile-chat-send');
+                const mobileChatMessages = document.getElementById('mobile-chat-messages');
+                const mobileChatLoading = document.getElementById('mobile-chat-loading');
+                const closeMobileChat = document.getElementById('close-mobile-chat');
+                
+                // Jump to chat button
+                const jumpToChat = document.getElementById('jump-to-chat');
+                
+                function addMessage(content, isUser = false, isMobile = false) {{
+                    const targetMessages = isMobile ? mobileChatMessages : chatMessages;
                     const messageEl = document.createElement('div');
                     messageEl.className = `flex ${{isUser ? 'justify-end' : 'justify-start'}}`;
                     
@@ -7043,20 +7550,24 @@ def model_results(model_id):
                     bubbleEl.textContent = content;
                     
                     messageEl.appendChild(bubbleEl);
-                    chatMessages.appendChild(messageEl);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    targetMessages.appendChild(messageEl);
+                    targetMessages.scrollTop = targetMessages.scrollHeight;
                 }}
                 
-                async function sendMessage() {{
-                    const question = chatInput.value.trim();
+                async function sendMessage(isMobile = false) {{
+                    const input = isMobile ? mobileChatInput : chatInput;
+                    const loading = isMobile ? mobileChatLoading : chatLoading;
+                    const messages = isMobile ? mobileChatMessages : chatMessages;
+                    
+                    const question = input.value.trim();
                     if (!question) return;
                     
                     // Add user message
-                    addMessage(question, true);
-                    chatInput.value = '';
+                    addMessage(question, true, isMobile);
+                    input.value = '';
                     
                     // Show loading
-                    chatLoading.classList.remove('hidden');
+                    loading.classList.remove('hidden');
                     
                     try {{
                         const response = await fetch('/api/ai/chat', {{
@@ -7072,27 +7583,71 @@ def model_results(model_id):
                         
                         const data = await response.json();
                         
-                        chatLoading.classList.add('hidden');
+                        loading.classList.add('hidden');
                         
                         if (data.success) {{
-                            addMessage(data.response);
+                            addMessage(data.response, false, isMobile);
                         }} else {{
-                            addMessage('Sorry, I encountered an error. Please try again.');
+                            addMessage('Sorry, I encountered an error. Please try again.', false, isMobile);
                         }}
                     }} catch (error) {{
                         console.error('Chat error:', error);
-                        chatLoading.classList.add('hidden');
-                        addMessage('Sorry, I encountered an error. Please try again.');
+                        loading.classList.add('hidden');
+                        addMessage('Sorry, I encountered an error. Please try again.', false, isMobile);
                     }}
                 }}
                 
-                // Event listeners
-                chatSend.addEventListener('click', sendMessage);
+                // Desktop chat event listeners
+                chatSend.addEventListener('click', () => sendMessage(false));
                 chatInput.addEventListener('keypress', function(e) {{
                     if (e.key === 'Enter') {{
-                        sendMessage();
+                        sendMessage(false);
                     }}
                 }});
+                
+                // Mobile chat event listeners
+                mobileChatSend.addEventListener('click', () => sendMessage(true));
+                mobileChatInput.addEventListener('keypress', function(e) {{
+                    if (e.key === 'Enter') {{
+                        sendMessage(true);
+                    }}
+                }});
+                
+                // Mobile FAB and bottom sheet
+                mobileChatFab.addEventListener('click', function() {{
+                    mobileChatSheet.classList.remove('translate-y-full');
+                    mobileChatInput.focus();
+                }});
+                
+                closeMobileChat.addEventListener('click', function() {{
+                    mobileChatSheet.classList.add('translate-y-full');
+                }});
+                
+                // Jump to chat functionality
+                jumpToChat.addEventListener('click', function() {{
+                    if (window.innerWidth >= 1280) {{
+                        // Desktop: scroll to chat panel
+                        const chatPanel = document.querySelector('.xl\\:sticky');
+                        if (chatPanel) {{
+                            chatPanel.scrollIntoView({{ behavior: 'smooth' }});
+                            chatInput.focus();
+                        }}
+                    }} else {{
+                        // Mobile: open bottom sheet
+                        mobileChatSheet.classList.remove('translate-y-full');
+                        mobileChatInput.focus();
+                    }}
+                }});
+                
+                // Auto-scroll chat into view on desktop load
+                if (window.innerWidth >= 1280) {{
+                    setTimeout(() => {{
+                        const chatPanel = document.querySelector('.xl\\:sticky');
+                        if (chatPanel) {{
+                            chatPanel.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                        }}
+                    }}, 500);
+                }}
             }}
         </script>
     </body>
