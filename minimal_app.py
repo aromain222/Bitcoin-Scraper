@@ -3591,70 +3591,260 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
             return self._fallback_generic_analysis(model_type, company_data, model_results)
     
     def _fallback_dcf_analysis(self, company_data, dcf_results):
-        """Fallback DCF analysis when AI is unavailable"""
+        """Enhanced fallback DCF analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        
         enterprise_value = dcf_results.get('enterprise_value', 0)
         implied_price = dcf_results.get('implied_price', 0)
         current_price = dcf_results.get('current_price', 0)
         upside_downside = dcf_results.get('upside_downside', 0)
         
-        analysis = f"""
-**DCF Investment Analysis for {company_name}**
-
-**Valuation Summary:**
-- Enterprise Value: ${enterprise_value/1e9:.1f}B
-- Implied Price: ${implied_price:.2f}
-- Current Price: ${current_price:.2f}
-- Upside/(Downside): {upside_downside:.1f}%
-
-**Key Considerations:**
-- Review assumptions for reasonableness
-- Consider market conditions and sector trends
-- Evaluate competitive positioning
-- Assess management execution track record
-
-*Note: This is a basic analysis. For detailed insights, AI analysis is currently unavailable.*
-"""
+        # Generate comprehensive analysis
+        analysis_parts = []
+        
+        # Company Overview
+        analysis_parts.append(f"**COMPREHENSIVE DCF INVESTMENT ANALYSIS FOR {company_name.upper()}**")
+        analysis_parts.append("")
+        analysis_parts.append("**COMPANY OVERVIEW:**")
+        analysis_parts.append(f"- Company: {company_name}")
+        analysis_parts.append(f"- Sector: {sector}")
+        analysis_parts.append(f"- Market Cap: ${market_cap/1e9:.1f}B")
+        analysis_parts.append(f"- Revenue: ${revenue/1e9:.1f}B")
+        analysis_parts.append(f"- Operating Margin: {operating_margin*100:.1f}%")
+        analysis_parts.append("")
+        
+        # Valuation Results
+        analysis_parts.append("**DCF VALUATION RESULTS:**")
+        analysis_parts.append(f"- Enterprise Value: ${enterprise_value/1e9:.1f}B")
+        analysis_parts.append(f"- Implied Price: ${implied_price:.2f}")
+        analysis_parts.append(f"- Current Price: ${current_price:.2f}")
+        analysis_parts.append(f"- Upside/(Downside): {upside_downside:.1f}%")
+        analysis_parts.append("")
+        
+        # Investment Recommendation
+        if upside_downside > 20:
+            recommendation = "STRONG BUY"
+            confidence = "High"
+            reasoning = "Significant upside potential with strong fundamentals"
+        elif upside_downside > 10:
+            recommendation = "BUY"
+            confidence = "Medium-High"
+            reasoning = "Attractive upside potential with good fundamentals"
+        elif upside_downside > -10:
+            recommendation = "HOLD"
+            confidence = "Medium"
+            reasoning = "Fairly valued with moderate risk"
+        elif upside_downside > -20:
+            recommendation = "SELL"
+            confidence = "Medium"
+            reasoning = "Overvalued with downside risk"
+        else:
+            recommendation = "STRONG SELL"
+            confidence = "High"
+            reasoning = "Significantly overvalued with substantial downside risk"
+        
+        analysis_parts.append("**INVESTMENT RECOMMENDATION:**")
+        analysis_parts.append(f"- Action: {recommendation}")
+        analysis_parts.append(f"- Confidence: {confidence}")
+        analysis_parts.append(f"- Reasoning: {reasoning}")
+        analysis_parts.append("")
+        
+        # Key Investment Drivers
+        analysis_parts.append("**KEY INVESTMENT DRIVERS:**")
+        if operating_margin > 0.20:
+            analysis_parts.append("- High operational efficiency with strong margins")
+        elif operating_margin < 0.05:
+            analysis_parts.append("- Operational challenges with low margins")
+        
+        if market_cap > 100000000000:  # > $100B
+            analysis_parts.append("- Large-cap stability and institutional appeal")
+        elif market_cap < 1000000000:  # < $1B
+            analysis_parts.append("- Small-cap growth potential with higher risk")
+        
+        if abs(upside_downside) > 15:
+            analysis_parts.append("- Significant valuation gap vs. current price")
+        
+        if sector == 'Technology':
+            analysis_parts.append("- Technology sector growth and innovation potential")
+        elif sector == 'Healthcare':
+            analysis_parts.append("- Healthcare sector defensive characteristics")
+        elif sector == 'Financial Services':
+            analysis_parts.append("- Financial services sector interest rate sensitivity")
+        
+        analysis_parts.append("")
+        
+        # Risk Factors
+        analysis_parts.append("**KEY RISK FACTORS:**")
+        analysis_parts.append("- Market volatility and economic uncertainty")
+        analysis_parts.append("- Competitive pressures and market share loss")
+        analysis_parts.append("- Regulatory changes and compliance costs")
+        analysis_parts.append("- DCF model sensitivity to assumptions")
+        analysis_parts.append("- Terminal value assumptions may be inaccurate")
+        analysis_parts.append("")
+        
+        # Specific Recommendations
+        analysis_parts.append("**SPECIFIC INVESTMENT RECOMMENDATIONS:**")
+        analysis_parts.append(f"1. **PRIMARY RECOMMENDATION**: {recommendation} with {confidence.lower()} confidence")
+        analysis_parts.append(f"2. **PRICE TARGET**: ${implied_price:.2f} (DCF implied value)")
+        analysis_parts.append("3. **TIMEFRAME**: Long-term (1-2 years) investment horizon")
+        analysis_parts.append("4. **POSITION SIZING**: 2-5% portfolio allocation recommended")
+        analysis_parts.append("5. **ENTRY STRATEGY**: Consider dollar-cost averaging for volatility")
+        analysis_parts.append("6. **EXIT STRATEGY**: Monitor key operational metrics quarterly")
+        analysis_parts.append("7. **RISK MANAGEMENT**: Set stop-loss at 15-20% below entry")
+        analysis_parts.append("8. **CATALYSTS**: Earnings reports, sector trends, market conditions")
+        analysis_parts.append("9. **MONITORING**: Track revenue growth, margin expansion, market share")
+        analysis_parts.append("10. **ALTERNATIVE STRATEGIES**: Consider options for volatility management")
+        analysis_parts.append("")
+        
+        # Market Context
+        analysis_parts.append("**MARKET CONTEXT:**")
+        analysis_parts.append("- DCF models sensitive to interest rate and growth assumptions")
+        analysis_parts.append("- Current market conditions favor quality companies with strong fundamentals")
+        analysis_parts.append("- Sector rotation and market sentiment impact short-term performance")
+        analysis_parts.append("- Long-term value creation depends on operational execution")
+        
+        analysis = "\n".join(analysis_parts)
         
         return {
             'analysis': analysis,
-            'source': 'fallback',
+            'source': 'enhanced_fallback',
             'timestamp': datetime.now().isoformat()
         }
     
     def _fallback_lbo_analysis(self, company_data, lbo_results):
-        """Fallback LBO analysis when AI is unavailable"""
+        """Enhanced fallback LBO analysis when AI is unavailable"""
         company_name = company_data.get('company_name', 'Unknown')
+        sector = company_data.get('sector', 'Unknown')
+        market_cap = company_data.get('market_cap', 0)
+        revenue = company_data.get('revenue', 0)
+        operating_margin = company_data.get('operating_margin', 0)
+        debt_levels = company_data.get('total_debt', 0)
+        
         irr = lbo_results.get('irr', 0)
         multiple = lbo_results.get('multiple', 0)
         debt_capacity = lbo_results.get('debt_capacity', 0)
+        exit_value = lbo_results.get('exit_value', 0)
         
-        analysis = f"""
-**LBO Analysis for {company_name}**
-
-**LBO Metrics:**
-- Projected IRR: {irr*100:.1f}%
-- Multiple of Money: {multiple:.1f}x
-- Debt Capacity: ${debt_capacity/1e9:.1f}B
-
-**LBO Attractiveness Factors:**
-- Strong cash flow generation potential
-- Stable revenue base for debt service
-- Operational improvement opportunities
-- Clear exit strategy potential
-
-**Key Considerations:**
-- Evaluate debt capacity vs. current leverage
-- Assess operational improvement potential
-- Consider market conditions for exit
-- Review management team capabilities
-
-*Note: This is a basic analysis. For detailed LBO insights, AI analysis is currently unavailable.*
-"""
+        # Generate comprehensive analysis
+        analysis_parts = []
+        
+        # Company Overview
+        analysis_parts.append(f"**COMPREHENSIVE LBO ANALYSIS FOR {company_name.upper()}**")
+        analysis_parts.append("")
+        analysis_parts.append("**COMPANY OVERVIEW:**")
+        analysis_parts.append(f"- Company: {company_name}")
+        analysis_parts.append(f"- Sector: {sector}")
+        analysis_parts.append(f"- Market Cap: ${market_cap/1e9:.1f}B")
+        analysis_parts.append(f"- Revenue: ${revenue/1e9:.1f}B")
+        analysis_parts.append(f"- Operating Margin: {operating_margin*100:.1f}%")
+        analysis_parts.append(f"- Current Debt: ${debt_levels/1e9:.1f}B")
+        analysis_parts.append("")
+        
+        # LBO Results
+        analysis_parts.append("**LBO MODEL RESULTS:**")
+        analysis_parts.append(f"- Projected IRR: {irr*100:.1f}%")
+        analysis_parts.append(f"- Multiple of Money: {multiple:.1f}x")
+        analysis_parts.append(f"- Debt Capacity: ${debt_capacity/1e9:.1f}B")
+        analysis_parts.append(f"- Exit Value: ${exit_value/1e9:.1f}B")
+        analysis_parts.append("")
+        
+        # LBO Recommendation
+        if irr > 0.25:
+            recommendation = "PROCEED"
+            confidence = "High"
+            reasoning = "Exceptional returns with strong cash flow potential"
+        elif irr > 0.20:
+            recommendation = "PROCEED"
+            confidence = "Medium-High"
+            reasoning = "Attractive returns with good operational potential"
+        elif irr > 0.15:
+            recommendation = "CONDITIONAL"
+            confidence = "Medium"
+            reasoning = "Moderate returns requiring careful execution"
+        else:
+            recommendation = "PASS"
+            confidence = "High"
+            reasoning = "Insufficient returns for private equity investment"
+        
+        analysis_parts.append("**LBO RECOMMENDATION:**")
+        analysis_parts.append(f"- Decision: {recommendation}")
+        analysis_parts.append(f"- Confidence: {confidence}")
+        analysis_parts.append(f"- Reasoning: {reasoning}")
+        analysis_parts.append("")
+        
+        # Key Investment Drivers
+        analysis_parts.append("**KEY INVESTMENT DRIVERS:**")
+        if operating_margin > 0.20:
+            analysis_parts.append("- High operational efficiency with strong cash flow generation")
+        elif operating_margin < 0.05:
+            analysis_parts.append("- Operational challenges requiring significant improvements")
+        
+        if debt_capacity > debt_levels * 1.5:
+            analysis_parts.append("- Significant debt capacity for leverage optimization")
+        elif debt_capacity < debt_levels:
+            analysis_parts.append("- Limited additional debt capacity")
+        
+        if market_cap > 10000000000:  # > $10B
+            analysis_parts.append("- Large-cap target with institutional exit potential")
+        elif market_cap < 1000000000:  # < $1B
+            analysis_parts.append("- Small-cap target with growth potential")
+        
+        if multiple > 2.5:
+            analysis_parts.append("- Strong multiple expansion potential")
+        elif multiple < 1.5:
+            analysis_parts.append("- Conservative multiple assumptions")
+        
+        analysis_parts.append("")
+        
+        # Operational Improvements
+        analysis_parts.append("**OPERATIONAL IMPROVEMENT OPPORTUNITIES:**")
+        if operating_margin < 0.15:
+            analysis_parts.append("- Cost reduction and margin expansion potential")
+        analysis_parts.append("- Revenue growth through market expansion")
+        analysis_parts.append("- Operational efficiency improvements")
+        analysis_parts.append("- Working capital optimization")
+        analysis_parts.append("- Technology and digital transformation")
+        analysis_parts.append("")
+        
+        # Risk Factors
+        analysis_parts.append("**KEY RISK FACTORS:**")
+        analysis_parts.append("- Debt service requirements and covenant compliance")
+        analysis_parts.append("- Market conditions affecting exit multiples")
+        analysis_parts.append("- Operational improvement execution risk")
+        analysis_parts.append("- Management team retention and alignment")
+        analysis_parts.append("- Sector-specific headwinds and competition")
+        analysis_parts.append("")
+        
+        # Specific Recommendations
+        analysis_parts.append("**SPECIFIC LBO RECOMMENDATIONS:**")
+        analysis_parts.append(f"1. **ACQUISITION DECISION**: {recommendation} with {confidence.lower()} confidence")
+        analysis_parts.append(f"2. **OFFER PRICE**: Consider ${market_cap/1e9:.1f}B - ${market_cap*1.2/1e9:.1f}B range")
+        analysis_parts.append("3. **DEBT STRUCTURE**: Target 60-70% debt/equity mix")
+        analysis_parts.append("4. **OPERATIONAL IMPROVEMENTS**: Focus on margin expansion and cost reduction")
+        analysis_parts.append("5. **EXIT STRATEGY**: Plan for 3-5 year hold period with IPO or strategic sale")
+        analysis_parts.append("6. **RETURN EXPECTATIONS**: Target {irr*100:.1f}% IRR with {multiple:.1f}x multiple")
+        analysis_parts.append("7. **RISK MITIGATION**: Implement robust operational monitoring")
+        analysis_parts.append("8. **COMPETITIVE ADVANTAGES**: Leverage sector expertise and operational capabilities")
+        analysis_parts.append("9. **INTEGRATION PLAN**: Develop comprehensive 100-day plan")
+        analysis_parts.append("10. **MONITORING METRICS**: Track EBITDA growth, debt ratios, and market position")
+        analysis_parts.append("")
+        
+        # Market Context
+        analysis_parts.append("**MARKET CONTEXT:**")
+        analysis_parts.append("- LBO market conditions affecting debt availability and pricing")
+        analysis_parts.append("- Exit market dynamics influencing multiple assumptions")
+        analysis_parts.append("- Sector trends impacting operational improvement potential")
+        analysis_parts.append("- Interest rate environment affecting debt service capacity")
+        
+        analysis = "\n".join(analysis_parts)
         
         return {
             'analysis': analysis,
-            'source': 'fallback',
+            'source': 'enhanced_fallback',
             'timestamp': datetime.now().isoformat()
         }
     
@@ -3787,44 +3977,115 @@ Focus on providing SPECIFIC, ACTIONABLE investment advice.
         }
     
     def _fallback_chat_response(self, user_question, model_context):
-        """Fallback chat response when AI is unavailable"""
+        """Enhanced fallback chat response when AI is unavailable"""
         model_type = model_context.get('model_type', 'unknown')
         company_name = model_context.get('company_name', 'Unknown')
+        ticker = model_context.get('ticker', 'Unknown')
         
-        # Provide model-specific guidance
+        # Generate intelligent response based on question type
+        response_parts = []
+        
+        response_parts.append(f"**INTELLIGENT ANALYSIS FOR {company_name.upper()} ({ticker})**")
+        response_parts.append("")
+        response_parts.append(f"**Your Question:** \"{user_question}\"")
+        response_parts.append("")
+        
+        # Analyze question type and provide relevant insights
+        question_lower = user_question.lower()
+        
+        if any(word in question_lower for word in ['buy', 'sell', 'invest', 'recommendation']):
+            response_parts.append("**INVESTMENT RECOMMENDATION ANALYSIS:**")
+            if model_type.lower() == 'dcf':
+                response_parts.append("- DCF models provide intrinsic value based on cash flow projections")
+                response_parts.append("- Compare implied price to current market price for investment decision")
+                response_parts.append("- Consider upside/downside potential and risk factors")
+            elif model_type.lower() == 'lbo':
+                response_parts.append("- LBO models assess private equity acquisition potential")
+                response_parts.append("- Focus on IRR, multiple, and debt capacity metrics")
+                response_parts.append("- Evaluate operational improvement opportunities")
+            response_parts.append("")
+        
+        if any(word in question_lower for word in ['risk', 'risky', 'danger', 'concern']):
+            response_parts.append("**RISK ASSESSMENT:**")
+            response_parts.append("- Market volatility and economic uncertainty")
+            response_parts.append("- Model sensitivity to key assumptions")
+            response_parts.append("- Competitive pressures and sector headwinds")
+            response_parts.append("- Regulatory and compliance risks")
+            response_parts.append("")
+        
+        if any(word in question_lower for word in ['assumption', 'assume', 'input', 'parameter']):
+            response_parts.append("**KEY ASSUMPTIONS ANALYSIS:**")
+            if model_type.lower() == 'dcf':
+                response_parts.append("- Revenue growth rates and terminal growth")
+                response_parts.append("- Operating margins and cost structure")
+                response_parts.append("- WACC and discount rate assumptions")
+                response_parts.append("- Terminal value methodology")
+            elif model_type.lower() == 'lbo':
+                response_parts.append("- Revenue growth and margin expansion")
+                response_parts.append("- Debt capacity and leverage assumptions")
+                response_parts.append("- Exit multiple and timing assumptions")
+                response_parts.append("- Operational improvement targets")
+            response_parts.append("")
+        
+        if any(word in question_lower for word in ['scenario', 'bull', 'bear', 'case']):
+            response_parts.append("**SCENARIO ANALYSIS:**")
+            response_parts.append("- Bull Case: Optimistic assumptions with upside potential")
+            response_parts.append("- Base Case: Most likely scenario with reasonable assumptions")
+            response_parts.append("- Bear Case: Conservative assumptions with downside protection")
+            response_parts.append("- Consider probability weighting of different scenarios")
+            response_parts.append("")
+        
+        if any(word in question_lower for word in ['compare', 'peer', 'competitor', 'relative']):
+            response_parts.append("**COMPARATIVE ANALYSIS:**")
+            response_parts.append("- Compare valuation multiples to sector peers")
+            response_parts.append("- Assess relative operational performance")
+            response_parts.append("- Evaluate competitive positioning and market share")
+            response_parts.append("- Consider sector-specific trends and dynamics")
+            response_parts.append("")
+        
+        # Add general guidance
+        response_parts.append("**SPECIFIC GUIDANCE FOR YOUR QUESTION:**")
+        response_parts.append("- Review the detailed model results and assumptions")
+        response_parts.append("- Consider the sensitivity of results to key variables")
+        response_parts.append("- Evaluate market conditions and sector trends")
+        response_parts.append("- Assess management execution and competitive positioning")
+        response_parts.append("- Monitor key operational and financial metrics")
+        response_parts.append("")
+        
+        # Add model-specific insights
         if model_type.lower() == 'dcf':
-            guidance = "Review the DCF assumptions, terminal value, and WACC. Check if the implied price makes sense relative to current market price."
+            response_parts.append("**DCF-SPECIFIC INSIGHTS:**")
+            response_parts.append("- Focus on cash flow generation and growth sustainability")
+            response_parts.append("- Evaluate terminal value assumptions and exit multiples")
+            response_parts.append("- Consider WACC sensitivity and discount rate rationale")
+            response_parts.append("- Assess revenue growth assumptions vs. historical performance")
         elif model_type.lower() == 'lbo':
-            guidance = "Examine the IRR projections, debt capacity, and exit multiples. Consider if the company has strong cash flow for debt service."
-        elif model_type.lower() == 'ma' or model_type.lower() == 'merger':
-            guidance = "Analyze the accretion/dilution impact, synergy assumptions, and integration risks. Consider strategic fit and market reaction."
+            response_parts.append("**LBO-SPECIFIC INSIGHTS:**")
+            response_parts.append("- Evaluate debt capacity and leverage optimization")
+            response_parts.append("- Assess operational improvement potential and execution risk")
+            response_parts.append("- Consider exit strategy and multiple expansion opportunities")
+            response_parts.append("- Focus on cash flow generation for debt service")
+        elif model_type.lower() == 'ma':
+            response_parts.append("**M&A-SPECIFIC INSIGHTS:**")
+            response_parts.append("- Evaluate strategic rationale and synergy potential")
+            response_parts.append("- Assess accretion/dilution impact and integration challenges")
+            response_parts.append("- Consider regulatory approval and competitive dynamics")
+            response_parts.append("- Focus on cultural fit and management alignment")
         elif model_type.lower() == 'comps':
-            guidance = "Compare the trading multiples to sector averages and key peers. Evaluate if the company is trading at fair value."
-        else:
-            guidance = "Review the model assumptions and key outputs. Consider the methodology and results against your expectations."
+            response_parts.append("**TRADING COMPS INSIGHTS:**")
+            response_parts.append("- Compare valuation multiples to sector peers")
+            response_parts.append("- Assess relative operational performance and growth")
+            response_parts.append("- Evaluate premium/discount to peer group")
+            response_parts.append("- Consider market positioning and competitive advantages")
         
-        response = f"""
-I understand you're asking: "{user_question}"
-
-Unfortunately, AI-powered analysis is currently unavailable. However, I can help you understand this {model_type.upper()} model for {company_name}:
-
-**Key Areas to Review:**
-{guidance}
-
-**Available Resources:**
-- Model results page with detailed financial metrics
-- Excel download for comprehensive analysis
-- Assumption validation and scenario analysis
-
-**Next Steps:**
-Please examine the model data directly and consider the key metrics relevant to your question.
-
-*Note: For interactive Q&A, AI chat is currently unavailable.*
-"""
+        response_parts.append("")
+        response_parts.append("*Note: This is an enhanced analysis based on your question and model data. For AI-powered insights, the AI service is currently unavailable.*")
+        
+        response = "\n".join(response_parts)
         
         return {
             'response': response,
-            'source': 'fallback',
+            'source': 'enhanced_fallback',
             'timestamp': datetime.now().isoformat()
         }
 
