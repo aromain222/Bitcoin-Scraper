@@ -22,8 +22,8 @@ import openai
 import anthropic
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 
-# Import our financial data engine (yfinance-based)
-from financial_data import build_company_assumptions
+# Import yfinance directly for historical data
+import yfinance as yf
 
 # Create Flask app
 app = Flask(__name__)
@@ -88,12 +88,116 @@ class SessionManager:
 
 session_manager = SessionManager()
 
+# Function to get historical assumptions from yfinance
+def get_historical_assumptions(ticker):
+    """Get historical financial assumptions from yfinance"""
+    try:
+        stock = yf.Ticker(ticker)
+        
+        # Get company info
+        info = stock.info
+        company_name = info.get('longName', ticker)
+        
+        # Get financial statements
+        financials = stock.financials
+        balance_sheet = stock.balance_sheet
+        cash_flow = stock.cashflow
+        
+        if financials.empty:
+            return {
+                'error': 'insufficient_historicals',
+                'message': 'No financial data available for this ticker'
+            }
+        
+        # Calculate revenue growth from historical data
+        revenue_data = financials.loc['Total Revenue'] if 'Total Revenue' in financials.index else None
+        if revenue_data is None or len(revenue_data) < 3:
+            return {
+                'error': 'insufficient_historicals', 
+                'message': 'Need at least 3 years of revenue data'
+            }
+        
+        # Calculate 3-year CAGR
+        revenues = revenue_data.dropna().values
+        if len(revenues) >= 3:
+            cagr = (revenues[0] / revenues[2]) ** (1/2) - 1  # 2-year CAGR from 3 data points
+        else:
+            cagr = 0.08  # Default 8%
+        
+        # Calculate operating margin
+        operating_income = financials.loc['Operating Income'] if 'Operating Income' in financials.index else None
+        if operating_income is not None and len(operating_income) >= 3:
+            margins = []
+            for i in range(min(3, len(operating_income))):
+                if revenues[i] > 0:
+                    margins.append(operating_income.iloc[i] / revenues[i])
+            avg_margin = sum(margins) / len(margins) if margins else 0.20
+        else:
+            avg_margin = 0.20
+        
+        # Calculate tax rate
+        income_before_tax = financials.loc['Income Before Tax'] if 'Income Before Tax' in financials.index else None
+        tax_expense = financials.loc['Tax Provision'] if 'Tax Provision' in financials.index else None
+        
+        if income_before_tax is not None and tax_expense is not None and len(income_before_tax) >= 3:
+            tax_rates = []
+            for i in range(min(3, len(income_before_tax))):
+                if income_before_tax.iloc[i] > 0:
+                    tax_rates.append(tax_expense.iloc[i] / income_before_tax.iloc[i])
+            avg_tax_rate = sum(tax_rates) / len(tax_rates) if tax_rates else 0.21
+        else:
+            avg_tax_rate = 0.21
+        
+        # Build revenue growth path (fade from CAGR to terminal growth)
+        terminal_growth = min(0.025, max(0.02, cagr * 0.3))
+        revenue_growth_path = []
+        for year in range(5):
+            progress = year / 4  # 0 to 1
+            growth_rate = cagr * (1 - progress) + terminal_growth * progress
+            revenue_growth_path.append(max(0.005, min(0.30, growth_rate)))
+        
+        # Build operating margin path
+        operating_margin_path = []
+        for year in range(5):
+            # Slight improvement over time
+            margin_improvement = 0.005 * (4 - year) / 4  # Up to 50bps improvement
+            margin = avg_margin + margin_improvement
+            operating_margin_path.append(max(0.05, min(0.50, margin)))
+        
+        return {
+            'company_name': company_name,
+            'assumptions': {
+                'revenue_growth': revenue_growth_path,
+                'operating_margin': operating_margin_path,
+                'tax_rate': avg_tax_rate,
+                'wacc': 0.10,  # Default WACC
+                'terminal_growth': terminal_growth,
+                'capex_percent_revenue': 0.06,  # Default
+                'da_percent_revenue': 0.04,     # Default
+                'nwc_percent_revenue': 0.03     # Default
+            },
+            'historicals': {
+                'revenue': revenues[:5].tolist(),
+                'operating_margins': margins if 'margins' in locals() else [],
+                'revenue_cagr_3yr': cagr,
+                'avg_operating_margin_3yr': avg_margin,
+                'avg_tax_rate_3yr': avg_tax_rate
+            },
+            'provenance': {'source': 'yfinance'}
+        }
+        
+    except Exception as e:
+        return {
+            'error': 'processing_error',
+            'message': f'Error processing data for {ticker}: {str(e)}'
+        }
+
 # Function to generate DCF model with company-specific assumptions
 def generate_dcf_model(ticker, climate):
     try:
         print(f"Generating DCF model for {ticker}...")
-        # Get company-specific assumptions from historical financials
-        assumptions = build_company_assumptions(ticker)
+        # Get company-specific assumptions from yfinance historical data
+        assumptions = get_historical_assumptions(ticker)
         
         # Check if we got an error
         if "error" in assumptions:
