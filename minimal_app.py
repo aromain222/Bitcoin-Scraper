@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime, timedelta
-import yfinance as yf
+# yfinance removed - now using FMP APIs
 import pandas as pd
 import numpy as np
 import openpyxl
