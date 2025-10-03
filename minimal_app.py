@@ -22,8 +22,8 @@ import openai
 import anthropic
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 
-# Import our FMP data engine
-from fmp_data_engine import build_fmp_assumptions
+# Import our financial data engine (yfinance-based)
+from financial_data import build_company_assumptions
 
 # Create Flask app
 app = Flask(__name__)
@@ -92,44 +92,48 @@ session_manager = SessionManager()
 def generate_dcf_model(ticker, climate):
     try:
         print(f"Generating DCF model for {ticker}...")
-        # Get company-specific assumptions from FMP
-        assumptions = build_fmp_assumptions(ticker)
+        # Get company-specific assumptions from historical financials
+        assumptions = build_company_assumptions(ticker)
         
         # Check if we got an error
         if "error" in assumptions:
-            print(f"FMP Error getting assumptions: {assumptions['message']}")
+            print(f"Error getting historical assumptions: {assumptions['message']}")
             return {
                 'ticker': ticker,
                 'company_name': ticker,
                 'data_source': 'ERROR',
                 'error': assumptions['message'],
-                'error_type': assumptions.get('error', 'FMP_API_ERROR'),
+                'error_type': assumptions.get('error', 'HISTORICAL_DATA_ERROR'),
                 'insufficient_data': True
             }
         
         print(f"Successfully retrieved assumptions for {ticker}")
         
-        # Extract data from FMP assumptions
+        # Extract data from historical financials
         company_name = assumptions.get('company_name', ticker)
         
-        # Extract key assumptions from FMP data
-        fmp_assumptions = assumptions.get('assumptions', {})
-        revenue_growth = fmp_assumptions.get('revenue_growth', [0.08, 0.07, 0.06, 0.05, 0.04])
-        operating_margin = fmp_assumptions.get('operating_margin', [0.25, 0.25, 0.25, 0.25, 0.25])
-        tax_rate = fmp_assumptions.get('tax_rate', 0.21)
-        wacc = fmp_assumptions.get('wacc', 0.105)
-        terminal_growth = fmp_assumptions.get('terminal_growth', 0.025)
+        # Extract key assumptions from historical data
+        historical_assumptions = assumptions.get('assumptions', {})
+        revenue_growth = historical_assumptions.get('revenue_growth', [0.08, 0.07, 0.06, 0.05, 0.04])
+        operating_margin = historical_assumptions.get('operating_margin', [0.25, 0.25, 0.25, 0.25, 0.25])
+        tax_rate = historical_assumptions.get('tax_rate', 0.21)
+        wacc = historical_assumptions.get('wacc', 0.105)
+        terminal_growth = historical_assumptions.get('terminal_growth', 0.025)
         
-        # Get additional metrics
-        capex_percent = fmp_assumptions.get('capex_percent_revenue', 0.06)
-        da_percent = fmp_assumptions.get('da_percent_revenue', 0.04)
-        nwc_percent = fmp_assumptions.get('nwc_percent_revenue', 0.03)
+        # Get additional metrics from historical data
+        capex_percent = historical_assumptions.get('capex_percent_revenue', 0.06)
+        da_percent = historical_assumptions.get('da_percent_revenue', 0.04)
+        nwc_percent = historical_assumptions.get('nwc_percent_revenue', 0.03)
         
         # Get historical data for UI
         historicals = assumptions.get('historicals', {})
         
-        # For demo purposes - in real implementation, you'd get this from FMP market data API
-        current_price = 25.00  # This should come from FMP market data
+        # Get current price from yfinance
+        try:
+            stock = yf.Ticker(ticker)
+            current_price = stock.history(period="1d")['Close'].iloc[-1] if not stock.history(period="1d").empty else 25.00
+        except:
+            current_price = 25.00
         
         # Simple DCF calculation for demonstration
         enterprise_value = 2500000000  # Simplified
@@ -158,7 +162,7 @@ def generate_dcf_model(ticker, climate):
             'raw_assumptions': assumptions,
             'historicals': historicals,
             'provenance': assumptions.get('provenance', {}),
-            'data_source': 'FMP'
+            'data_source': 'YFINANCE'
         }
     except Exception as e:
         print(f"Error in generate_dcf_model: {str(e)}")
@@ -166,8 +170,8 @@ def generate_dcf_model(ticker, climate):
             'ticker': ticker,
             'company_name': ticker,
             'data_source': 'ERROR',
-            'error': f"FMP API Error: {str(e)}",
-            'error_type': 'FMP_API_EXCEPTION',
+            'error': f"Historical Data Error: {str(e)}",
+            'error_type': 'HISTORICAL_DATA_EXCEPTION',
             'insufficient_data': True
         }
 
@@ -263,13 +267,13 @@ def model_results(model_id):
     terminal_growth = assumptions.get('terminal_growth', 0.025)
     tax_rate = assumptions.get('tax_rate', 0.21)
     
-    # Get additional metrics from FMP
+    # Get additional metrics from historical data
     capex_percent_revenue = assumptions.get('capex_percent_revenue', 0.06)
     da_percent_revenue = assumptions.get('da_percent_revenue', 0.04)
     nwc_percent_revenue = assumptions.get('nwc_percent_revenue', 0.03)
     
     # Get data source and provenance
-    data_source = result.get('data_source', 'FMP')
+    data_source = result.get('data_source', 'YFINANCE')
     company_name = result.get('company_name', ticker)
     provenance = result.get('provenance', {})
     historicals = result.get('historicals', {})
@@ -381,7 +385,7 @@ def model_results(model_id):
                 <div class="text-blue-700 font-medium text-sm">WACC</div>
                 <div class="text-2xl font-bold text-blue-800">{wacc:.1%}</div>
                 <div class="text-xs text-blue-600 mt-1">
-                    FMP Historical Data<br>
+                    Historical Financial Data<br>
                     3-year average calculations
                 </div>
             </div>
@@ -390,7 +394,7 @@ def model_results(model_id):
                 <div class="text-green-700 font-medium text-sm">Terminal Growth</div>
                 <div class="text-2xl font-bold text-green-800">{terminal_growth:.1%}</div>
                 <div class="text-xs text-green-600 mt-1">
-                    FMP historical analysis<br>
+                    Historical analysis<br>
                     Conservative terminal rate
                 </div>
             </div>
@@ -399,7 +403,7 @@ def model_results(model_id):
                 <div class="text-purple-700 font-medium text-sm">Effective Tax Rate</div>
                 <div class="text-2xl font-bold text-purple-800">{tax_rate:.1%}</div>
                 <div class="text-xs text-purple-600 mt-1">
-                    FMP income statements<br>
+                    Historical income statements<br>
                     3-year effective tax average
                 </div>
             </div>
@@ -656,7 +660,7 @@ def download_excel():
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         as_attachment=True,
-        download_name="fmp_historical_assumptions_model.xlsx"
+        download_name="historical_assumptions_model.xlsx"
     )
 
 if __name__ == '__main__':
