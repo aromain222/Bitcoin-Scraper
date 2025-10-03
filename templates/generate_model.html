@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}FinModAI - Generate Model{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Generate Financial Model</h1>
+    
+    <!-- Model Selection Tabs -->
+    <div class="mb-8">
+        <div class="flex flex-wrap border-b border-gray-200">
+            <button class="px-6 py-3 bg-navy text-white font-medium rounded-t-lg">DCF</button>
+            <button class="px-6 py-3 text-gray-600 font-medium hover:text-navy">LBO</button>
+            <button class="px-6 py-3 text-gray-600 font-medium hover:text-navy">Three-Statement</button>
+            <button class="px-6 py-3 text-gray-600 font-medium hover:text-navy">M&A</button>
+            <button class="px-6 py-3 text-gray-600 font-medium hover:text-navy">Comps</button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-12 gap-6">
+        <!-- Left Panel - Input Form -->
+        <div class="col-span-12 lg:col-span-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">Model Inputs</h2>
+                
+                <form method="POST" id="model-form" class="space-y-6">
+                    <!-- Company Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-base font-medium text-gray-900">Company Information</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="ticker" class="block text-sm font-medium text-gray-700 mb-1">Ticker Symbol</label>
+                                <div class="relative">
+                                    <input type="text" name="ticker" id="ticker" required
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="e.g., MSFT">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="climate" class="block text-sm font-medium text-gray-700 mb-1">Scenario</label>
+                                <select name="climate" id="climate" required
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus">
+                                    <option value="base">Base Case</option>
+                                    <option value="bull">Bull Case</option>
+                                    <option value="bear">Bear Case</option>
+                                    <option value="esg">ESG Focus</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- DCF Assumptions -->
+                    <div class="space-y-4">
+                        <h3 class="text-base font-medium text-gray-900">DCF Assumptions</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="revenue_growth" class="block text-sm font-medium text-gray-700 mb-1">Revenue Growth</label>
+                                <div class="relative">
+                                    <input type="number" name="revenue_growth" id="revenue_growth" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="8.0">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="operating_margin" class="block text-sm font-medium text-gray-700 mb-1">Operating Margin</label>
+                                <div class="relative">
+                                    <input type="number" name="operating_margin" id="operating_margin" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="25.0">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="wacc" class="block text-sm font-medium text-gray-700 mb-1">WACC</label>
+                                <div class="relative">
+                                    <input type="number" name="wacc" id="wacc" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="10.5">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="terminal_growth" class="block text-sm font-medium text-gray-700 mb-1">Terminal Growth</label>
+                                <div class="relative">
+                                    <input type="number" name="terminal_growth" id="terminal_growth" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="2.5">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="tax_rate" class="block text-sm font-medium text-gray-700 mb-1">Tax Rate</label>
+                                <div class="relative">
+                                    <input type="number" name="tax_rate" id="tax_rate" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="21.0">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="capex_percent" class="block text-sm font-medium text-gray-700 mb-1">CapEx (% of Revenue)</label>
+                                <div class="relative">
+                                    <input type="number" name="capex_percent" id="capex_percent" step="0.1" min="0" max="100"
+                                        class="w-full px-4 py-2 border border-input-border rounded-lg focus:border-input-focus"
+                                        placeholder="6.0">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-gray-500">%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" id="generate-button"
+                                class="w-full bg-navy text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-colors">
+                            Generate Model
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Output Panel -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Model Output</h2>
+                
+                <div id="model-status" class="mb-4 text-center py-8">
+                    <p class="text-gray-500">Ready to generate a model.</p>
+                </div>
+                
+                <div id="model-output" class="hidden">
+                    <div class="bg-success-bg text-success p-4 rounded-lg flex items-center justify-between mb-4">
+                        <span class="font-medium">Model generated successfully!</span>
+                        <a href="/download-excel" class="bg-success text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors">
+                            Download Excel
+                        </a>
+                    </div>
+                    
+                    <div class="max-h-70vh overflow-y-auto border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">Model Overview</h3>
+                        <div id="model-summary" class="text-sm text-gray-700 whitespace-pre-line">
+                            <!-- Model summary will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Chat Assistant -->
+        <div class="col-span-12 lg:col-span-4 lg:sticky lg:top-6 h-fit">
+            <div class="bg-white rounded-xl shadow-sm flex flex-col">
+                <header class="px-4 py-3 border-b font-semibold text-gray-900">Analyst Assistant</header>
+                <div id="chat-messages" class="px-4 py-3 max-h-[60vh] overflow-y-auto" aria-live="polite">
+                    <div class="text-sm text-gray-500 text-center py-2">
+                        Ask me anything about financial modeling!
+                    </div>
+                </div>
+                <div class="p-3 border-t sticky bottom-0 bg-white">
+                    <div class="flex space-x-2">
+                        <input type="text" id="chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent"
+                               aria-label="Chat input">
+                        <button id="chat-send" class="bg-navy text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+                                aria-label="Send message">
+                            Send
+                        </button>
+                    </div>
+                    <div id="chat-loading" class="hidden mt-2">
+                        <div class="flex items-center justify-center py-2">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-navy"></div>
+                            <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Chat FAB -->
+<button id="mobile-chat-fab" aria-label="Open chat" class="fixed bottom-5 right-5 rounded-full bg-navy text-white shadow-lg p-4 lg:hidden z-50">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+    </svg>
+</button>
+
+<!-- Mobile Chat Bottom Sheet -->
+<div id="mobile-chat-sheet" class="fixed bottom-0 left-0 right-0 h-[70vh] bg-white rounded-t-2xl shadow-2xl transform translate-y-full transition-transform duration-300 ease-out lg:hidden z-50">
+    <div class="flex flex-col h-full">
+        <!-- Header -->
+        <div class="px-4 py-3 border-b flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">Analyst Assistant</h3>
+            <button id="close-mobile-chat" class="p-2 hover:bg-gray-100 rounded-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Messages -->
+        <div id="mobile-chat-messages" class="flex-1 px-4 py-3 overflow-y-auto" aria-live="polite">
+            <div class="text-sm text-gray-500 text-center py-2">
+                Ask me anything about financial modeling!
+            </div>
+        </div>
+        
+        <!-- Input -->
+        <div class="p-3 border-t bg-white" style="padding-bottom: env(safe-area-inset-bottom, 12px);">
+            <div class="flex space-x-2">
+                <input type="text" id="mobile-chat-input" placeholder="Ask about assumptions, valuation, or risks..." 
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent"
+                       aria-label="Chat input">
+                <button id="mobile-chat-send" class="bg-navy text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
+                        aria-label="Send message">
+                    Send
+                </button>
+            </div>
+            <div id="mobile-chat-loading" class="hidden mt-2">
+                <div class="flex items-center justify-center py-2">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-navy"></div>
+                    <span class="ml-2 text-sm text-gray-600">AI is thinking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const form = document.getElementById('model-form');
+        const inputs = form.querySelectorAll('input[type="text"], input[type="number"], select');
+        
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (input.required && !input.value) {
+                    input.classList.add('invalid');
+                    
+                    // Add error message if it doesn't exist
+                    if (!input.nextElementSibling || !input.nextElementSibling.classList.contains('error-message')) {
+                        const errorMessage = document.createElement('div');
+                        errorMessage.className = 'error-message';
+                        errorMessage.textContent = 'This field is required';
+                        input.parentNode.appendChild(errorMessage);
+                    }
+                    
+                    isValid = false;
+                } else {
+                    input.classList.remove('invalid');
+                    
+                    // Remove error message if it exists
+                    if (input.nextElementSibling && input.nextElementSibling.classList.contains('error-message')) {
+                        input.nextElementSibling.remove();
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            } else {
+                // Show generating state
+                const modelStatus = document.getElementById('model-status');
+                modelStatus.innerHTML = `
+                    <div class="flex flex-col items-center justify-center">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-navy mb-3"></div>
+                        <p class="text-gray-700">Generating model...</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // Mobile chat functionality
+        const mobileChatFab = document.getElementById('mobile-chat-fab');
+        const mobileChatSheet = document.getElementById('mobile-chat-sheet');
+        const closeMobileChat = document.getElementById('close-mobile-chat');
+        
+        mobileChatFab.addEventListener('click', function() {
+            mobileChatSheet.classList.remove('translate-y-full');
+        });
+        
+        closeMobileChat.addEventListener('click', function() {
+            mobileChatSheet.classList.add('translate-y-full');
+        });
+        
+        // Chat functionality
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
+        const chatMessages = document.getElementById('chat-messages');
+        const mobileChatInput = document.getElementById('mobile-chat-input');
+        const mobileChatSend = document.getElementById('mobile-chat-send');
+        const mobileChatMessages = document.getElementById('mobile-chat-messages');
+        
+        function addMessage(content, isUser = false, isMobile = false) {
+            const targetMessages = isMobile ? mobileChatMessages : chatMessages;
+            const messageEl = document.createElement('div');
+            messageEl.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-2`;
+            
+            const bubbleEl = document.createElement('div');
+            bubbleEl.className = `max-w-xs lg:max-w-md px-3 py-2 rounded-lg text-sm ${isUser ? 'bg-navy text-white' : 'bg-gray-100 text-gray-800'}`;
+            bubbleEl.textContent = content;
+            
+            messageEl.appendChild(bubbleEl);
+            targetMessages.appendChild(messageEl);
+            targetMessages.scrollTop = targetMessages.scrollHeight;
+        }
+        
+        function sendMessage(isMobile = false) {
+            const input = isMobile ? mobileChatInput : chatInput;
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            addMessage(question, true, isMobile);
+            input.value = '';
+            
+            // Simulate AI response (replace with actual API call)
+            setTimeout(() => {
+                addMessage("I'm here to help with your financial modeling questions. What specific aspect would you like to know more about?", false, isMobile);
+            }, 1000);
+        }
+        
+        chatSend.addEventListener('click', () => sendMessage(false));
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage(false);
+            }
+        });
+        
+        mobileChatSend.addEventListener('click', () => sendMessage(true));
+        mobileChatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage(true);
+            }
+        });
+        
+        // Model tab selection
+        const modelTabs = document.querySelectorAll('.flex.flex-wrap.border-b button');
+        modelTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                modelTabs.forEach(t => {
+                    t.classList.remove('bg-navy', 'text-white');
+                    t.classList.add('text-gray-600');
+                });
+                
+                this.classList.remove('text-gray-600');
+                this.classList.add('bg-navy', 'text-white');
+            });
+        });
+    });
+</script>
+{% endblock %}

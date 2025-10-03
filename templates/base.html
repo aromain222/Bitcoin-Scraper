@@ -3,70 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Financial Modeling System{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>{% block title %}FinModAI{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'navy': '#1F4E79',
+                        'success': '#2E7D32',
+                        'success-bg': '#E8F5E9',
+                        'panel-bg': '#F3F4F6',
+                        'input-border': '#D1D5DB',
+                        'input-focus': '#1F4E79'
+                    },
+                    spacing: {
+                        '128': '32rem',
+                        '144': '36rem'
+                    },
+                    maxHeight: {
+                        '70vh': '70vh',
+                        '128': '32rem',
+                        '144': '36rem'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .navbar-brand { font-weight: bold; color: #2c3e50 !important; }
-        .card { box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: none; }
-        .btn-primary { background-color: #2c3e50; border-color: #2c3e50; }
-        .btn-primary:hover { background-color: #34495e; border-color: #34495e; }
-        .status-good { color: #27ae60; }
-        .status-warning { color: #f39c12; }
-        .status-error { color: #e74c3c; }
-        .progress-bar { transition: width 0.3s ease; }
-        body { background-color: #f8f9fa; }
-        .feature-card { transition: transform 0.2s; }
-        .feature-card:hover { transform: translateY(-5px); }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Custom scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* Input focus styles */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1F4E79;
+            box-shadow: 0 0 0 2px rgba(31, 78, 121, 0.2);
+        }
+        
+        /* Invalid input styles */
+        input.invalid, select.invalid, textarea.invalid {
+            border-color: #DC2626;
+            background-color: #FEF2F2;
+        }
+        
+        /* Error message */
+        .error-message {
+            color: #DC2626;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-break-inside-avoid {
+                break-inside: avoid;
+            }
+        }
     </style>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-chart-line"></i> Financial Modeling System
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dcf">
-                            <i class="fas fa-calculator"></i> DCF Analysis
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/validation">
-                            <i class="fas fa-check-circle"></i> Validation
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/system-status">
-                            <i class="fas fa-cogs"></i> System Status
-                        </a>
-                    </li>
-                </ul>
+<body class="bg-panel-bg min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-navy text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="font-bold text-xl">FinModAI</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/generate-model" class="hover:text-gray-200">New Model</a>
+                    <a href="/models" class="hover:text-gray-200">All Models</a>
+                    <a href="/" class="hover:text-gray-200">Home</a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'info' }} alert-dismissible fade show">
+                    <div class="p-4 mb-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-success-bg text-success{% endif %}">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {% block content %}{% endblock %}
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}{% endblock %}
+    </main>
 </body>
 </html>

@@ -1,124 +1,97 @@
 {% extends "base.html" %}
 
-{% block title %}Financial Modeling Dashboard{% endblock %}
+{% block title %}FinModAI - Home{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h2 class="card-title mb-0">
-                    <i class="fas fa-tachometer-alt"></i> Financial Modeling System
-                </h2>
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Investment Banking Financial Models</h1>
+        
+        <p class="text-lg text-gray-600 mb-8">
+            Generate professional financial models with AI-powered insights.
+        </p>
+        
+        <!-- Model Type Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            <!-- DCF Card -->
+            <div class="bg-panel-bg rounded-xl p-6 text-left">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">DCF Valuation</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Discounted Cash Flow analysis with customizable growth rates, margins, and WACC.
+                </p>
+                <a href="/generate-model" class="text-navy font-medium text-sm hover:underline">Generate DCF →</a>
             </div>
-            <div class="card-body">
-                <p class="lead">Professional-grade financial analysis with enterprise validation and connectivity assurance.</p>
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="card feature-card text-center p-3 mb-3">
-                            <i class="fas fa-calculator fa-2x text-primary mb-2"></i>
-                            <h5>DCF Analysis</h5>
-                            <p>Complete discounted cash flow modeling with validation</p>
-                            {% if dcf_available %}
-                                <a href="/dcf" class="btn btn-primary btn-sm">Start DCF</a>
-                            {% else %}
-                                <button class="btn btn-secondary btn-sm" disabled>Unavailable</button>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card feature-card text-center p-3 mb-3">
-                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                            <h5>Validation</h5>
-                            <p>Real-time model validation and connectivity checking</p>
-                            {% if validation_available %}
-                                <a href="/validation" class="btn btn-success btn-sm">Validate</a>
-                            {% else %}
-                                <button class="btn btn-secondary btn-sm" disabled>Unavailable</button>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card feature-card text-center p-3 mb-3">
-                            <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
-                            <h5>Data Management</h5>
-                            <p>Multi-source financial data with quality scoring</p>
-                            {% if data_manager_available %}
-                                <span class="badge bg-info">Active</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Unavailable</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card feature-card text-center p-3 mb-3">
-                            <i class="fas fa-cogs fa-2x text-warning mb-2"></i>
-                            <h5>System Status</h5>
-                            <p>Monitor system capabilities and performance</p>
-                            <a href="/system-status" class="btn btn-warning btn-sm">Check Status</a>
-                        </div>
-                    </div>
-                </div>
+            
+            <!-- LBO Card -->
+            <div class="bg-panel-bg rounded-xl p-6 text-left">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">LBO Analysis</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Leveraged Buyout models with debt structures, operational improvements, and exit strategies.
+                </p>
+                <a href="/generate-model" class="text-navy font-medium text-sm hover:underline">Generate LBO →</a>
+            </div>
+            
+            <!-- M&A Card -->
+            <div class="bg-panel-bg rounded-xl p-6 text-left">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">M&A Analysis</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Merger & Acquisition models with accretion/dilution analysis and synergy valuation.
+                </p>
+                <a href="/generate-model" class="text-navy font-medium text-sm hover:underline">Generate M&A →</a>
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            <a href="/generate-model">
+                <button class="bg-navy text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition-colors">
+                    Generate New Model
+                </button>
+            </a>
+            
+            <div>
+                <a href="/models" class="text-navy hover:underline">
+                    View All Models
+                </a>
             </div>
         </div>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-star"></i> Key Features</h5>
+    
+    <!-- Features -->
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 mb-4">
+                <svg class="w-6 h-6 text-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
             </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><i class="fas fa-check text-success"></i> Multi-source data aggregation</li>
-                    <li><i class="fas fa-check text-success"></i> Real-time validation</li>
-                    <li><i class="fas fa-check text-success"></i> Complete cell connectivity</li>
-                    <li><i class="fas fa-check text-success"></i> Google Sheets export</li>
-                    <li><i class="fas fa-check text-success"></i> Enterprise audit trails</li>
-                </ul>
-            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Professional Models</h3>
+            <p class="text-sm text-gray-600">
+                Investment banking quality financial models with customizable assumptions.
+            </p>
         </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar"></i> System Capabilities</h5>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 mb-4">
+                <svg class="w-6 h-6 text-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <strong>DCF Models:</strong><br>
-                        <span class="status-{{ 'good' if dcf_available else 'error' }}">
-                            <i class="fas fa-{{ 'check' if dcf_available else 'times' }}"></i>
-                            {{ 'Available' if dcf_available else 'Unavailable' }}
-                        </span>
-                    </div>
-                    <div class="col-6">
-                        <strong>Data Sources:</strong><br>
-                        <span class="status-{{ 'good' if data_manager_available else 'error' }}">
-                            <i class="fas fa-{{ 'check' if data_manager_available else 'times' }}"></i>
-                            {{ 'Available' if data_manager_available else 'Unavailable' }}
-                        </span>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <strong>Validation:</strong><br>
-                        <span class="status-{{ 'good' if validation_available else 'error' }}">
-                            <i class="fas fa-{{ 'check' if validation_available else 'times' }}"></i>
-                            {{ 'Available' if validation_available else 'Unavailable' }}
-                        </span>
-                    </div>
-                    <div class="col-6">
-                        <strong>Connectivity:</strong><br>
-                        <span class="status-good">
-                            <i class="fas fa-check"></i> Available
-                        </span>
-                    </div>
-                </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">AI-Powered Insights</h3>
+            <p class="text-sm text-gray-600">
+                Get expert analysis and recommendations based on your financial models.
+            </p>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-navy/10 mb-4">
+                <svg class="w-6 h-6 text-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
             </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Excel Downloads</h3>
+            <p class="text-sm text-gray-600">
+                Download your models as Excel files for further customization and analysis.
+            </p>
         </div>
     </div>
 </div>
